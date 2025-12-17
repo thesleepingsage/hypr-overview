@@ -1,0 +1,151 @@
+pragma Singleton
+import QtQuick
+import Quickshell
+import Quickshell.Io
+
+Singleton {
+    id: root
+
+    // Overview grid settings
+    property int rows: 2
+    property int columns: 5
+    property real scale: 0.18
+    property bool orderRightLeft: false
+    property bool orderBottomUp: false
+    property bool centerIcons: true
+    property bool showWorkspaceNumbers: true
+
+    // Appearance settings
+    property real backdropOpacity: 0.7
+    property int windowCornerRadius: 8
+    property int activeWorkspaceBorderWidth: 2
+    property int animationDuration: 200
+
+    // Layout plugin detection
+    // "auto" = detect at runtime, "hy3" = force hy3, "default" = force vanilla Hyprland
+    property string layoutPlugin: "auto"
+    property bool _hy3Detected: false
+    readonly property bool useHy3: layoutPlugin === "hy3" || (layoutPlugin === "auto" && _hy3Detected)
+
+    // Config file path
+    readonly property string configPath: Quickshell.env("HOME") + "/.config/hypr-overview/config.json"
+
+    // Accumulated content for parsing
+    property string _configContent: ""
+
+    // Load config from JSON file
+    function loadConfig(): void {
+        _configContent = ""
+        existsCheck.running = true
+    }
+
+    function _parseConfig(): void {
+        if (_configContent.trim() === "") return
+
+        try {
+            const config = JSON.parse(_configContent)
+
+            // Overview settings
+            if (config.overview) {
+                if (config.overview.rows !== undefined) root.rows = config.overview.rows
+                if (config.overview.columns !== undefined) root.columns = config.overview.columns
+                if (config.overview.scale !== undefined) root.scale = config.overview.scale
+                if (config.overview.orderRightLeft !== undefined) root.orderRightLeft = config.overview.orderRightLeft
+                if (config.overview.orderBottomUp !== undefined) root.orderBottomUp = config.overview.orderBottomUp
+                if (config.overview.centerIcons !== undefined) root.centerIcons = config.overview.centerIcons
+                if (config.overview.showWorkspaceNumbers !== undefined) root.showWorkspaceNumbers = config.overview.showWorkspaceNumbers
+            }
+
+            // Appearance settings
+            if (config.appearance) {
+                if (config.appearance.backdropOpacity !== undefined) root.backdropOpacity = config.appearance.backdropOpacity
+                if (config.appearance.windowCornerRadius !== undefined) root.windowCornerRadius = config.appearance.windowCornerRadius
+                if (config.appearance.activeWorkspaceBorderWidth !== undefined) root.activeWorkspaceBorderWidth = config.appearance.activeWorkspaceBorderWidth
+                if (config.appearance.animationDuration !== undefined) root.animationDuration = config.appearance.animationDuration
+            }
+
+            // Layout plugin override
+            if (config.layoutPlugin !== undefined) root.layoutPlugin = config.layoutPlugin
+
+            console.log("[hypr-overview] Config loaded successfully")
+        } catch (e) {
+            console.error("[hypr-overview] Failed to parse config:", e)
+        }
+    }
+
+    Process {
+        id: existsCheck
+        command: ["test", "-f", root.configPath]
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode === 0) {
+                configFile.running = true
+            } else {
+                console.log("[hypr-overview] No config file at:", root.configPath, "- using defaults")
+            }
+        }
+    }
+
+    Process {
+        id: configFile
+        command: ["cat", root.configPath]
+
+        stdout: SplitParser {
+            onRead: data => {
+                root._configContent += data + "\n"
+            }
+        }
+
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode === 0) {
+                root._parseConfig()
+            }
+        }
+    }
+
+    // Detect hy3 plugin at runtime - check both hyprctl and hyprpm
+    Process {
+        id: hy3DetectorHyprctl
+        command: ["hyprctl", "plugins", "list"]
+
+        stdout: SplitParser {
+            onRead: data => {
+                if (data.toLowerCase().includes("hy3")) {
+                    root._hy3Detected = true
+                    console.log("[hypr-overview] hy3 detected via hyprctl plugins")
+                }
+            }
+        }
+
+        onExited: {
+            // Also check hyprpm list for typical installations
+            if (!root._hy3Detected) {
+                hy3DetectorHyprpm.running = true
+            } else {
+                console.log("[hypr-overview] Layout mode:", root.useHy3 ? "hy3" : "default")
+            }
+        }
+    }
+
+    Process {
+        id: hy3DetectorHyprpm
+        command: ["hyprpm", "list"]
+
+        stdout: SplitParser {
+            onRead: data => {
+                if (data.toLowerCase().includes("hy3")) {
+                    root._hy3Detected = true
+                    console.log("[hypr-overview] hy3 detected via hyprpm")
+                }
+            }
+        }
+
+        onExited: {
+            console.log("[hypr-overview] Layout mode:", root.useHy3 ? "hy3" : "default")
+        }
+    }
+
+    Component.onCompleted: {
+        loadConfig()
+        hy3DetectorHyprctl.running = true
+    }
+}
