@@ -36,6 +36,19 @@ Scope {
         function close(): void {
             OverviewState.close()
         }
+
+        // Stash operations
+        function stashWorkspace(): void {
+            StashState.stashWorkspace("quick")
+        }
+
+        function stashWorkspaceTo(trayName: string): void {
+            StashState.stashWorkspace(trayName)
+        }
+
+        function unstashAll(trayName: string): void {
+            StashState.unstashAll(trayName || "quick")
+        }
     }
 
     // GlobalShortcut for keybind integration - only create when in shell.qml context (no screen)
@@ -48,6 +61,31 @@ Scope {
 
             onPressed: {
                 OverviewState.toggle()
+            }
+        }
+    }
+
+    // Stash shortcuts
+    Loader {
+        active: root.screen === null
+        sourceComponent: GlobalShortcut {
+            name: "stashWorkspace"
+            description: "Stash all windows from current workspace to quick tray"
+
+            onPressed: {
+                StashState.stashWorkspace("quick")
+            }
+        }
+    }
+
+    Loader {
+        active: root.screen === null
+        sourceComponent: GlobalShortcut {
+            name: "unstashQuick"
+            description: "Restore all windows from quick stash tray"
+
+            onPressed: {
+                StashState.unstashAll("quick")
             }
         }
     }

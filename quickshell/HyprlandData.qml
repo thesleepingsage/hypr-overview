@@ -67,6 +67,15 @@ Singleton {
     }
 
     /**
+     * Get hyprctl client data for a specific workspace by name (for special workspaces)
+     * @param workspaceName - workspace name (e.g., "special:stash-quick")
+     * @returns list of hyprctl client objects
+     */
+    function hyprlandClientsForWorkspaceName(workspaceName) {
+        return root.windowList.filter(win => win.workspace.name === workspaceName);
+    }
+
+    /**
      * Get the largest window in a workspace (useful for thumbnails)
      * @param workspaceId - workspace ID
      * @returns hyprctl client object or null

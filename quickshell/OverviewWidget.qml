@@ -128,16 +128,21 @@ Item {
         id: overviewBackground
         anchors.fill: parent
 
-        implicitWidth: workspaceColumnLayout.implicitWidth + padding * 2
-        implicitHeight: workspaceColumnLayout.implicitHeight + padding * 2
+        implicitWidth: mainLayout.implicitWidth + padding * 2
+        implicitHeight: mainLayout.implicitHeight + padding * 2
         radius: largeRadius + padding
         color: backgroundColor
 
-        // Workspace grid
+        // Main layout (workspace grid + stash trays)
         Column {
-            id: workspaceColumnLayout
+            id: mainLayout
             anchors.centerIn: parent
-            spacing: workspaceSpacing
+            spacing: 12
+
+            // Workspace grid
+            Column {
+                id: workspaceColumnLayout
+                spacing: workspaceSpacing
 
             Repeater {
                 model: root.rows
@@ -219,14 +224,24 @@ Item {
                     }
                 }
             }
-        }
+            } // end workspaceColumnLayout
+
+            // Stash tray container
+            StashTrayContainer {
+                id: stashTrayContainer
+                monitorData: root.monitorData
+                widgetMonitor: root.monitorData
+            }
+        } // end mainLayout
 
         // Windows layer (on top of workspace backgrounds)
         Item {
             id: windowSpace
-            anchors.centerIn: parent
-            implicitWidth: workspaceColumnLayout.implicitWidth
-            implicitHeight: workspaceColumnLayout.implicitHeight
+            // Position to overlay on workspace grid, not entire layout
+            x: mainLayout.x
+            y: mainLayout.y
+            width: workspaceColumnLayout.implicitWidth
+            height: workspaceColumnLayout.implicitHeight
 
             // Window repeater
             Repeater {

@@ -28,6 +28,7 @@ Item {
     property bool hovered: false
     property bool pressed: false
     property bool isSwapTarget: false
+    property bool stashModeActive: false  // True when stash modifier is held
 
     // Icon configuration from OverviewConfig
     property bool centerIcons: OverviewConfig.centerIcons
@@ -237,6 +238,12 @@ Item {
             if (mouse.button === Qt.MiddleButton) {
                 // Middle click: close window
                 closeWindow();
+            } else if ((mouse.modifiers & Qt.ShiftModifier) && (mouse.modifiers & Qt.ControlModifier)) {
+                // Ctrl+Shift+Click: stash to secondary tray
+                stashWindow("later");
+            } else if (mouse.modifiers & Qt.ShiftModifier) {
+                // Shift+Click: stash window to primary tray
+                stashWindow("quick");
             } else {
                 // Left click: focus window
                 focusWindow();
@@ -254,5 +261,22 @@ Item {
     function closeWindow() {
         if (!windowData?.address) return;
         Hyprland.dispatch(`closewindow address:${windowData.address}`);
+    }
+
+    function stashWindow(trayName) {
+        if (!windowData?.address) return;
+        if (!StashState.enabled) return;
+
+        const wsId = windowData?.workspace?.id ?? -1;
+        const wsName = windowData?.workspace?.name ?? String(wsId);
+
+        StashState.stashWindow(
+            windowData.address,
+            trayName,
+            wsId,
+            wsName
+        );
+
+        console.log("[OverviewWindow] Stashed window", windowData.address, "to", trayName);
     }
 }

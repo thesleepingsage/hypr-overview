@@ -13,5 +13,17 @@
         "windowCornerRadius": 8,
         "activeWorkspaceBorderWidth": 2,
         "animationDuration": 200
+    },
+    "stashTrays": {
+        "enabled": true,
+        "trays": [
+            { "name": "quick", "label": "Quick Stash" },
+            { "name": "later", "label": "For Later" }
+        ],
+        "modifierKey": "Shift",
+        "secondaryModifier": "Control",
+        "showEmptyTrays": false,
+        "position": "bottom",
+        "previewScale": 0.12
     }
 }

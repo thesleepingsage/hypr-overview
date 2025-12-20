@@ -1,6 +1,9 @@
 singleton OverviewState 1.0 OverviewState.qml
 singleton OverviewConfig 1.0 Config.qml
 singleton HyprlandData 1.0 HyprlandData.qml
+singleton StashState 1.0 StashState.qml
 Overview 1.0 Overview.qml
 OverviewWindow 1.0 OverviewWindow.qml
 OverviewWidget 1.0 OverviewWidget.qml
+StashTray 1.0 StashTray.qml
+StashTrayContainer 1.0 StashTrayContainer.qml

@@ -24,6 +24,20 @@ Singleton {
     // Layout plugin detection
     // "auto" = detect at runtime, "hy3" = force hy3, "default" = force vanilla Hyprland
     property string layoutPlugin: "auto"
+
+    // Stash tray settings
+    property var stashTrays: ({
+        enabled: true,
+        trays: [
+            { name: "quick", label: "Quick Stash" },
+            { name: "later", label: "For Later" }
+        ],
+        modifierKey: "Shift",
+        secondaryModifier: "Control",
+        showEmptyTrays: false,
+        position: "bottom",
+        previewScale: 0.12
+    })
     property bool _hy3Detected: false
     readonly property bool useHy3: layoutPlugin === "hy3" || (layoutPlugin === "auto" && _hy3Detected)
 
@@ -66,6 +80,19 @@ Singleton {
 
             // Layout plugin override
             if (config.layoutPlugin !== undefined) root.layoutPlugin = config.layoutPlugin
+
+            // Stash tray settings
+            if (config.stashTrays) {
+                let stashConfig = root.stashTrays;
+                if (config.stashTrays.enabled !== undefined) stashConfig.enabled = config.stashTrays.enabled
+                if (config.stashTrays.trays !== undefined) stashConfig.trays = config.stashTrays.trays
+                if (config.stashTrays.modifierKey !== undefined) stashConfig.modifierKey = config.stashTrays.modifierKey
+                if (config.stashTrays.secondaryModifier !== undefined) stashConfig.secondaryModifier = config.stashTrays.secondaryModifier
+                if (config.stashTrays.showEmptyTrays !== undefined) stashConfig.showEmptyTrays = config.stashTrays.showEmptyTrays
+                if (config.stashTrays.position !== undefined) stashConfig.position = config.stashTrays.position
+                if (config.stashTrays.previewScale !== undefined) stashConfig.previewScale = config.stashTrays.previewScale
+                root.stashTrays = stashConfig
+            }
 
             console.log("[hypr-overview] Config loaded successfully")
         } catch (e) {
