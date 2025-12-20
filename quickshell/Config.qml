@@ -44,20 +44,12 @@ Singleton {
     // Config file path
     readonly property string configPath: Quickshell.env("HOME") + "/.config/hypr-overview/config.json"
 
-    // Accumulated content for parsing
-    property string _configContent: ""
-
-    // Load config from JSON file
-    function loadConfig(): void {
-        _configContent = ""
-        existsCheck.running = true
-    }
-
     function _parseConfig(): void {
-        if (_configContent.trim() === "") return
+        const content = configFileView.text()
+        if (!content || content.trim() === "") return
 
         try {
-            const config = JSON.parse(_configContent)
+            const config = JSON.parse(content)
 
             // Overview settings
             if (config.overview) {
@@ -100,31 +92,27 @@ Singleton {
         }
     }
 
-    Process {
-        id: existsCheck
-        command: ["test", "-f", root.configPath]
-        onExited: (exitCode, exitStatus) => {
-            if (exitCode === 0) {
-                configFile.running = true
-            } else {
-                console.log("[hypr-overview] No config file at:", root.configPath, "- using defaults")
-            }
-        }
+    // Debounce timer for config reload
+    Timer {
+        id: configReloadTimer
+        interval: 100
+        repeat: false
+        onTriggered: configFileView.reload()  // Reload file, then onLoaded fires
     }
 
-    Process {
-        id: configFile
-        command: ["cat", root.configPath]
+    // Config file with live watching
+    FileView {
+        id: configFileView
+        path: root.configPath
+        watchChanges: true
 
-        stdout: SplitParser {
-            onRead: data => {
-                root._configContent += data + "\n"
-            }
-        }
+        onFileChanged: configReloadTimer.restart()
 
-        onExited: (exitCode, exitStatus) => {
-            if (exitCode === 0) {
-                root._parseConfig()
+        onLoaded: root._parseConfig()
+
+        onLoadFailed: error => {
+            if (error == FileViewError.FileNotFound) {
+                console.log("[hypr-overview] No config file at:", root.configPath, "- using defaults")
             }
         }
     }
@@ -172,7 +160,7 @@ Singleton {
     }
 
     Component.onCompleted: {
-        loadConfig()
+        // FileView auto-loads and watches for changes
         hy3DetectorHyprctl.running = true
     }
 }
