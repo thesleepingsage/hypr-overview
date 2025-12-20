@@ -28,6 +28,24 @@ Rectangle {
     property bool isEmpty: windowCount === 0
     property bool collapsed: isEmpty && !StashState.showEmptyTrays
 
+    // Group windows by origin workspace
+    property var windowsByWorkspace: {
+        const groups = {};
+        for (const win of stashedWindows) {
+            const wsKey = win.originWorkspace;
+            if (!groups[wsKey]) {
+                groups[wsKey] = {
+                    id: win.originWorkspace,
+                    name: win.originWorkspaceName || String(win.originWorkspace),
+                    windows: []
+                };
+            }
+            groups[wsKey].windows.push(win);
+        }
+        // Convert to sorted array
+        return Object.values(groups).sort((a, b) => a.id - b.id);
+    }
+
     // Visual properties
     property real trayHeight: 100
     property real windowPreviewWidth: 120
@@ -109,105 +127,147 @@ Rectangle {
             visible: root.windowCount > 0
         }
 
-        // Window previews
+        // Grouped window previews by origin workspace
         Row {
             id: windowsRow
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 6
+            spacing: 12
 
             Repeater {
-                model: root.stashedWindows
+                model: root.windowsByWorkspace
 
-                delegate: Rectangle {
-                    id: windowPreview
+                delegate: Row {
+                    id: workspaceGroup
                     required property var modelData
                     required property int index
 
-                    property string windowAddress: modelData.address
-                    property var windowData: HyprlandData.windowByAddress[windowAddress]
-                    property var toplevel: {
-                        const toplevels = ToplevelManager.toplevels.values;
-                        const addr = windowAddress.replace("0x", "");
-                        return toplevels.find(t => t.HyprlandToplevel?.address === addr);
-                    }
+                    spacing: 4
 
-                    width: root.windowPreviewWidth
-                    height: root.windowPreviewHeight
-                    color: Qt.rgba(0.2, 0.2, 0.2, 1)
-                    radius: 6
-                    clip: true
-
-                    // Hover state
-                    property bool hovered: false
-                    border.color: hovered ? Qt.rgba(0.5, 0.7, 1.0, 0.8) : "transparent"
-                    border.width: 2
-
-                    // Live preview if available
-                    ScreencopyView {
-                        anchors.fill: parent
-                        anchors.margins: 2
-                        captureSource: OverviewState.isOpen ? windowPreview.toplevel : null
-                        live: true
-                        visible: toplevel !== undefined
-                    }
-
-                    // Fallback: app icon
-                    Image {
-                        anchors.centerIn: parent
-                        width: 32
-                        height: 32
-                        visible: windowPreview.toplevel === undefined
-                        source: {
-                            const className = windowPreview.windowData?.class ?? "";
-                            if (!className) return Quickshell.iconPath("application-x-executable");
-                            const entry = DesktopEntries.byId(className);
-                            if (entry?.icon) return Quickshell.iconPath(entry.icon, "application-x-executable");
-                            return Quickshell.iconPath(className, "application-x-executable");
-                        }
-                    }
-
-                    // Window title tooltip
+                    // Workspace label
                     Rectangle {
-                        visible: windowPreview.hovered
-                        anchors.bottom: parent.top
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.bottomMargin: 4
-                        width: titleText.width + 12
-                        height: titleText.height + 6
-                        color: "#2d2d2d"
+                        width: 20
+                        height: root.windowPreviewHeight
+                        color: Qt.rgba(0.3, 0.5, 0.8, 0.3)
                         radius: 4
-                        z: 100
 
                         Text {
-                            id: titleText
                             anchors.centerIn: parent
-                            text: windowPreview.windowData?.title ?? "Unknown"
-                            color: "white"
-                            font.pixelSize: 10
-                            maximumLineCount: 1
-                            elide: Text.ElideRight
+                            text: workspaceGroup.modelData.name
+                            color: Qt.rgba(1, 1, 1, 0.8)
+                            font.pixelSize: 12
+                            font.bold: true
                         }
                     }
 
-                    // Click to restore
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        acceptedButtons: Qt.LeftButton
+                    // Windows in this workspace group
+                    Row {
+                        spacing: 4
 
-                        onEntered: windowPreview.hovered = true
-                        onExited: windowPreview.hovered = false
+                        Repeater {
+                            model: workspaceGroup.modelData.windows
 
-                        onClicked: {
-                            StashState.unstashWindow(windowPreview.windowAddress, true);
-                            console.log("[StashTray] Restored window", windowPreview.windowAddress);
+                            delegate: Rectangle {
+                                id: windowPreview
+                                required property var modelData
+                                required property int index
+
+                                property string windowAddress: modelData.address
+                                property var windowData: HyprlandData.windowByAddress[windowAddress]
+                                property var toplevel: {
+                                    const toplevels = ToplevelManager.toplevels.values;
+                                    const addr = windowAddress.replace("0x", "");
+                                    return toplevels.find(t => t.HyprlandToplevel?.address === addr);
+                                }
+
+                                width: root.windowPreviewWidth
+                                height: root.windowPreviewHeight
+                                color: Qt.rgba(0.2, 0.2, 0.2, 1)
+                                radius: 6
+                                clip: true
+
+                                // Hover state
+                                property bool hovered: false
+                                border.color: hovered ? Qt.rgba(0.5, 0.7, 1.0, 0.8) : "transparent"
+                                border.width: 2
+
+                                // Live preview if available
+                                ScreencopyView {
+                                    anchors.fill: parent
+                                    anchors.margins: 2
+                                    captureSource: OverviewState.isOpen ? windowPreview.toplevel : null
+                                    live: true
+                                    visible: toplevel !== undefined
+                                }
+
+                                // Fallback: app icon
+                                Image {
+                                    anchors.centerIn: parent
+                                    width: 32
+                                    height: 32
+                                    visible: windowPreview.toplevel === undefined
+                                    source: {
+                                        const className = windowPreview.windowData?.class ?? "";
+                                        if (!className) return Quickshell.iconPath("application-x-executable");
+                                        const entry = DesktopEntries.byId(className);
+                                        if (entry?.icon) return Quickshell.iconPath(entry.icon, "application-x-executable");
+                                        return Quickshell.iconPath(className, "application-x-executable");
+                                    }
+                                }
+
+                                // Window title tooltip
+                                Rectangle {
+                                    visible: windowPreview.hovered
+                                    anchors.bottom: parent.top
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    anchors.bottomMargin: 4
+                                    width: titleText.width + 12
+                                    height: titleText.height + 6
+                                    color: "#2d2d2d"
+                                    radius: 4
+                                    z: 100
+
+                                    Text {
+                                        id: titleText
+                                        anchors.centerIn: parent
+                                        text: windowPreview.windowData?.title ?? "Unknown"
+                                        color: "white"
+                                        font.pixelSize: 10
+                                        maximumLineCount: 1
+                                        elide: Text.ElideRight
+                                    }
+                                }
+
+                                // Click to restore
+                                MouseArea {
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    acceptedButtons: Qt.LeftButton
+
+                                    onEntered: windowPreview.hovered = true
+                                    onExited: windowPreview.hovered = false
+
+                                    onClicked: {
+                                        StashState.unstashWindow(windowPreview.windowAddress, true);
+                                        console.log("[StashTray] Restored window", windowPreview.windowAddress);
+                                    }
+                                }
+
+                                // Animation
+                                Behavior on opacity {
+                                    NumberAnimation { duration: 150 }
+                                }
+                            }
                         }
                     }
 
-                    // Animation
-                    Behavior on opacity {
-                        NumberAnimation { duration: 150 }
+                    // Separator between workspace groups
+                    Rectangle {
+                        visible: workspaceGroup.index < root.windowsByWorkspace.length - 1
+                        width: 1
+                        height: parent.height - 16
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: Qt.rgba(1, 1, 1, 0.2)
                     }
                 }
             }

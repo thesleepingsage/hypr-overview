@@ -300,9 +300,9 @@ Singleton {
             trays: stashedWindows
         };
 
-        const jsonStr = JSON.stringify(stateData, null, 2);
-        // Use printf to write file (escapes special chars properly)
-        _saveProcess.command = ["bash", "-c", "printf '%s' " + JSON.stringify(jsonStr) + " > " + JSON.stringify(stateFilePath)];
+        // Write compact JSON (no pretty printing to avoid newline issues)
+        const jsonStr = JSON.stringify(stateData);
+        _saveProcess.command = ["bash", "-c", `echo '${jsonStr}' > '${stateFilePath}'`];
         _saveProcess.running = true;
     }
 
