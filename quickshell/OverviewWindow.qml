@@ -24,11 +24,10 @@ Item {
     property real xOffset: 0
     property real yOffset: 0
 
-    // Interaction state
+    // Interaction state (set by dragArea in OverviewWidget.qml)
     property bool hovered: false
     property bool pressed: false
     property bool isSwapTarget: false
-    property bool stashModeActive: false  // True when stash modifier is held
 
     // Icon configuration from OverviewConfig
     property bool centerIcons: OverviewConfig.centerIcons
@@ -222,47 +221,7 @@ Item {
         }
     }
 
-    // Mouse interaction
-    MouseArea {
-        id: mouseArea
-        anchors.fill: parent
-        hoverEnabled: true
-        acceptedButtons: Qt.LeftButton | Qt.MiddleButton
-
-        onEntered: root.hovered = true
-        onExited: root.hovered = false
-        onPressed: root.pressed = true
-        onReleased: root.pressed = false
-
-        onClicked: (mouse) => {
-            if (mouse.button === Qt.MiddleButton) {
-                // Middle click: close window
-                closeWindow();
-            } else if ((mouse.modifiers & Qt.ShiftModifier) && (mouse.modifiers & Qt.ControlModifier)) {
-                // Ctrl+Shift+Click: stash to secondary tray
-                stashWindow("later");
-            } else if (mouse.modifiers & Qt.ShiftModifier) {
-                // Shift+Click: stash window to primary tray
-                stashWindow("quick");
-            } else {
-                // Left click: focus window
-                focusWindow();
-            }
-        }
-    }
-
-    // Actions
-    function focusWindow() {
-        if (!windowData?.address) return;
-        Hyprland.dispatch(`focuswindow address:${windowData.address}`);
-        OverviewState.close();
-    }
-
-    function closeWindow() {
-        if (!windowData?.address) return;
-        Hyprland.dispatch(`closewindow address:${windowData.address}`);
-    }
-
+    // Stash action (called by dragArea in OverviewWidget.qml)
     function stashWindow(trayName) {
         if (!windowData?.address) return;
         if (!StashState.enabled) return;

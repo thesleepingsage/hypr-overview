@@ -425,13 +425,26 @@ Item {
                         onClicked: (event) => {
                             if (!windowDelegate.winData) return;
 
-                            if (event.button === Qt.LeftButton) {
-                                OverviewState.close();
-                                Hyprland.dispatch(`focuswindow address:${windowDelegate.winData.address}`);
-                                event.accepted = true;
-                            } else if (event.button === Qt.MiddleButton) {
+                            if (event.button === Qt.MiddleButton) {
+                                // Middle click: close window
                                 Hyprland.dispatch(`closewindow address:${windowDelegate.winData.address}`);
                                 event.accepted = true;
+                            } else if (event.button === Qt.LeftButton) {
+                                // Check modifiers for stash operations
+                                if ((event.modifiers & Qt.ShiftModifier) && (event.modifiers & Qt.ControlModifier)) {
+                                    // Ctrl+Shift+Click: stash to secondary tray
+                                    windowDelegate.stashWindow("later");
+                                    event.accepted = true;
+                                } else if (event.modifiers & Qt.ShiftModifier) {
+                                    // Shift+Click: stash to quick tray
+                                    windowDelegate.stashWindow("quick");
+                                    event.accepted = true;
+                                } else {
+                                    // Regular left click: focus window
+                                    OverviewState.close();
+                                    Hyprland.dispatch(`focuswindow address:${windowDelegate.winData.address}`);
+                                    event.accepted = true;
+                                }
                             }
                         }
                     }
