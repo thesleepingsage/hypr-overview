@@ -20,8 +20,7 @@ Options:
   -n, --dry-run    Preview changes without modifying files
   -h, --help       Show this help message
   -u, --uninstall  Remove all installed components
-  -d, --update     Quick update: refresh files, check shell integration
-  -l, --link       Use symlink instead of copy (for development)
+  -d, --update     Quick update: refresh files, skip prompts for existing setup
 
 Components installed:
   1. QML modules     → ~/.config/quickshell/hypr-overview/
@@ -45,7 +44,6 @@ EOF
 DRY_RUN=false
 UNINSTALL=false
 UPDATE_MODE=false
-USE_SYMLINK=false
 
 # Parse arguments
 for arg in "$@"; do
@@ -54,7 +52,6 @@ for arg in "$@"; do
         -n|--dry-run)   DRY_RUN=true ;;
         -u|--uninstall) UNINSTALL=true ;;
         -d|--update)    UPDATE_MODE=true ;;
-        -l|--link)      USE_SYMLINK=true ;;
         *) echo "Unknown option: $arg"; echo "Use --help for usage."; exit 1 ;;
     esac
 done
@@ -168,34 +165,15 @@ is_shell_integrated() {
 install_qml_modules() {
     info "Installing QML modules to $QML_INSTALL_DIR"
 
-    if $USE_SYMLINK; then
-        if dry_run_preview "Would create symlink: $QML_INSTALL_DIR -> $SCRIPT_DIR/quickshell"; then
-            return
-        fi
-
-        # Remove existing (file, dir, or symlink)
-        if [[ -e "$QML_INSTALL_DIR" ]] || [[ -L "$QML_INSTALL_DIR" ]]; then
-            rm -rf "$QML_INSTALL_DIR"
-        fi
-
-        ln -s "$SCRIPT_DIR/quickshell" "$QML_INSTALL_DIR"
-        success "QML modules symlinked (development mode)"
-    else
-        if dry_run_preview \
-            "Would create: $QML_INSTALL_DIR" \
-            "Would copy: $SCRIPT_DIR/quickshell/* → $QML_INSTALL_DIR/"; then
-            return
-        fi
-
-        # Remove existing symlink if present
-        if [[ -L "$QML_INSTALL_DIR" ]]; then
-            rm "$QML_INSTALL_DIR"
-        fi
-
-        mkdir -p "$QML_INSTALL_DIR"
-        cp -r "$SCRIPT_DIR/quickshell/"* "$QML_INSTALL_DIR/"
-        success "QML modules installed"
+    if dry_run_preview \
+        "Would create: $QML_INSTALL_DIR" \
+        "Would copy: $SCRIPT_DIR/quickshell/* → $QML_INSTALL_DIR/"; then
+        return
     fi
+
+    mkdir -p "$QML_INSTALL_DIR"
+    cp -r "$SCRIPT_DIR/quickshell/"* "$QML_INSTALL_DIR/"
+    success "QML modules installed"
 }
 
 install_config() {
@@ -490,11 +468,6 @@ install() {
     echo "Installation paths:"
     echo "  QML modules: $QML_INSTALL_DIR"
     echo "  Config:      $CONFIG_DIR"
-    if $USE_SYMLINK; then
-        echo -e "  Mode:        ${CYAN}symlink (development)${NC}"
-    else
-        echo "  Mode:        copy (production)"
-    fi
     echo ""
 
     if ! ask_yes "Continue with installation?"; then
@@ -544,29 +517,13 @@ update() {
         return
     fi
 
-    # Check if it's a symlink (dev mode)
-    if [[ -L "$QML_INSTALL_DIR" ]]; then
-        success "QML modules: symlinked (development mode)"
-        info "  -> $QML_INSTALL_DIR -> $(readlink "$QML_INSTALL_DIR")"
-
-        # Verify symlink target exists
-        if [[ ! -d "$(readlink -f "$QML_INSTALL_DIR")" ]]; then
-            warn "Symlink target does not exist!"
-            if ask "Fix symlink to point to $SCRIPT_DIR/quickshell?"; then
-                rm "$QML_INSTALL_DIR"
-                ln -s "$SCRIPT_DIR/quickshell" "$QML_INSTALL_DIR"
-                success "Symlink fixed"
-            fi
-        fi
+    # Update QML modules
+    info "Updating QML modules..."
+    if dry_run_preview "Would update: $QML_INSTALL_DIR"; then
+        :
     else
-        # Update QML modules (copy mode)
-        info "Updating QML modules..."
-        if dry_run_preview "Would update: $QML_INSTALL_DIR"; then
-            :
-        else
-            cp -r "$SCRIPT_DIR/quickshell/"* "$QML_INSTALL_DIR/"
-            success "QML modules updated"
-        fi
+        cp -r "$SCRIPT_DIR/quickshell/"* "$QML_INSTALL_DIR/"
+        success "QML modules updated"
     fi
 
     # Config is preserved
