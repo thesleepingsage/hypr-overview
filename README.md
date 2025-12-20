@@ -77,12 +77,13 @@ bind = Super Shift, U, global, quickshell:unstashQuick
 
 ### Stash Trays
 
-Stash trays let you "park" windows temporarily:
+Stash trays let you "park" windows temporarily. Windows are moved to a hidden workspace and displayed in a tray at the bottom of the overview. Click a stashed window to restore it to its original workspace.
 
-- **Quick Stash** - For windows you'll restore soon
-- **For Later** - Secondary tray for longer-term storage
+**Default trays:**
+- **Quick Stash** (Shift+Click)
+- **For Later** (Ctrl+Shift+Click)
 
-Stashed windows are removed from their workspace and stored in the tray. Click a stashed window to restore it to its original workspace.
+> **Note:** These are just organizational labels with no functional difference between them. There's no auto-expiry, priority, or special behavior - they're simply two buckets to help you categorize stashed windows however you prefer. Rename them or add more in your config.
 
 ## Configuration
 
