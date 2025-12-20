@@ -1,0 +1,19 @@
+# Internal development docs (not for public)
+docs/
+
+# User-specific runtime config
+config/config.json
+
+# Backups created by installer
+*.hypr-overview-backup.*
+
+# Editor/IDE
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
