@@ -1,10 +1,23 @@
 pragma Singleton
 import QtQuick
+import QtCore
 import Quickshell
 import Quickshell.Io
 
 Singleton {
     id: root
+
+    // --- Theme System ---
+    // Priority: Hardcoded defaults → User config.json → matugen.json (wins)
+
+    // Track if matugen theme is loaded
+    property bool _matugenLoaded: false
+
+    // User color overrides from config.json
+    property var _userColors: ({})
+
+    // Expose theme for components that want raw access
+    property alias theme: themeJson
 
     // Overview grid settings
     property int rows: 2
@@ -27,12 +40,37 @@ Singleton {
     property real workspaceSpacing: 5
     property real gridPadding: 10
 
-    // Colors (extracted for theming support)
-    property color backgroundColor: Qt.rgba(0.1, 0.1, 0.1, 0.95)
-    property color workspaceColor: Qt.rgba(0.15, 0.15, 0.15, 1)
-    property color workspaceHoverColor: Qt.rgba(0.25, 0.25, 0.25, 1)
-    property color activeBorderColor: Qt.rgba(0.4, 0.6, 1.0, 1)
-    property color workspaceNumberColor: Qt.rgba(1, 1, 1, 0.15)
+    // --- Colors ---
+    // Priority: matugen.json → user config.json → hardcoded MD3 defaults
+
+    // Hardcoded Material Design 3 defaults (dark theme)
+    readonly property color _defaultBackground: "#111318"
+    readonly property color _defaultWorkspace: "#1e2025"
+    readonly property color _defaultWorkspaceHover: "#282a2f"
+    readonly property color _defaultActiveBorder: "#abc7ff"
+    readonly property color _defaultWorkspaceNumber: "#44474e"
+
+    // Color resolution helper - applies priority chain with optional opacity
+    function _resolveColor(themeColor, userColorKey, defaultColor, opacity) {
+        const useOpacity = opacity !== undefined && opacity < 1.0;
+        if (_matugenLoaded) {
+            return useOpacity
+                ? Qt.rgba(themeColor.r, themeColor.g, themeColor.b, opacity)
+                : themeColor;
+        }
+        const userColor = _userColors[userColorKey];
+        if (userColor) return userColor;
+        return useOpacity
+            ? Qt.rgba(defaultColor.r, defaultColor.g, defaultColor.b, opacity)
+            : defaultColor;
+    }
+
+    // Resolved colors (uses priority chain via _resolveColor)
+    property color backgroundColor: _resolveColor(themeJson.background, "backgroundColor", _defaultBackground, 0.95)
+    property color workspaceColor: _resolveColor(themeJson.surface_container, "workspaceColor", _defaultWorkspace)
+    property color workspaceHoverColor: _resolveColor(themeJson.surface_container_high, "workspaceHoverColor", _defaultWorkspaceHover)
+    property color activeBorderColor: _resolveColor(themeJson.primary, "activeBorderColor", _defaultActiveBorder)
+    property color workspaceNumberColor: _resolveColor(themeJson.outline_variant, "workspaceNumberColor", _defaultWorkspaceNumber)
 
     // Layout plugin detection
     // "auto" = detect at runtime, "hy3" = force hy3, "default" = force vanilla Hyprland
@@ -81,6 +119,17 @@ Singleton {
                 if (config.appearance.windowCornerRadius !== undefined) root.windowCornerRadius = config.appearance.windowCornerRadius
                 if (config.appearance.activeWorkspaceBorderWidth !== undefined) root.activeWorkspaceBorderWidth = config.appearance.activeWorkspaceBorderWidth
                 if (config.appearance.animationDuration !== undefined) root.animationDuration = config.appearance.animationDuration
+
+                // Color overrides (only used if matugen.json not present)
+                if (config.appearance.colors) {
+                    let colors = {};
+                    if (config.appearance.colors.backgroundColor) colors.backgroundColor = config.appearance.colors.backgroundColor;
+                    if (config.appearance.colors.workspaceColor) colors.workspaceColor = config.appearance.colors.workspaceColor;
+                    if (config.appearance.colors.workspaceHoverColor) colors.workspaceHoverColor = config.appearance.colors.workspaceHoverColor;
+                    if (config.appearance.colors.activeBorderColor) colors.activeBorderColor = config.appearance.colors.activeBorderColor;
+                    if (config.appearance.colors.workspaceNumberColor) colors.workspaceNumberColor = config.appearance.colors.workspaceNumberColor;
+                    root._userColors = colors;
+                }
             }
 
             // Layout plugin override
@@ -127,6 +176,64 @@ Singleton {
             if (error == FileViewError.FileNotFound) {
                 console.log("[hypr-overview] No config file at:", root.configPath, "- using defaults")
             }
+        }
+    }
+
+    // --- Matugen Theme Loading ---
+    // Loads Material Design 3 colors from ~/.config/quickshell/matugen.json
+    // These take highest priority when available
+
+    FileView {
+        id: matugenFileView
+        path: StandardPaths.writableLocation(StandardPaths.HomeLocation) + "/.config/quickshell/matugen.json"
+        watchChanges: true
+
+        onFileChanged: reload()
+
+        onLoaded: {
+            root._matugenLoaded = true;
+            console.log("[hypr-overview] Matugen theme loaded - colors will auto-update");
+        }
+
+        onLoadFailed: error => {
+            root._matugenLoaded = false;
+            if (error == FileViewError.FileNotFound) {
+                console.log("[hypr-overview] No matugen.json found - using config/defaults");
+            }
+        }
+
+        JsonAdapter {
+            id: themeJson
+
+            // Material Design 3 color tokens with MD3 dark defaults
+            property color background: "#111318"
+            property color surface: "#111318"
+            property color surface_container: "#1e2025"
+            property color surface_container_low: "#191c20"
+            property color surface_container_high: "#282a2f"
+            property color surface_container_highest: "#33353a"
+            property color surface_bright: "#37393e"
+
+            property color primary: "#abc7ff"
+            property color primary_container: "#284777"
+            property color on_primary: "#0b305f"
+
+            property color secondary: "#bec6dc"
+            property color secondary_container: "#3e4759"
+
+            property color tertiary: "#ddbce0"
+            property color tertiary_container: "#573e5c"
+
+            property color error: "#ffb4ab"
+            property color error_container: "#93000a"
+
+            property color on_surface: "#e2e2e9"
+            property color on_background: "#e2e2e9"
+            property color outline: "#8e9099"
+            property color outline_variant: "#44474e"
+
+            property color scrim: "#000000"
+            property color shadow: "#000000"
         }
     }
 

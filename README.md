@@ -106,7 +106,14 @@ Edit `~/.config/hypr-overview/config.json`:
         "backdropOpacity": 0.7,
         "windowCornerRadius": 8,
         "activeWorkspaceBorderWidth": 2,
-        "animationDuration": 200
+        "animationDuration": 200,
+        "colors": {
+            "backgroundColor": "#111318",
+            "workspaceColor": "#1e2025",
+            "workspaceHoverColor": "#282a2f",
+            "activeBorderColor": "#abc7ff",
+            "workspaceNumberColor": "#44474e"
+        }
     },
     "stashTrays": {
         "enabled": true,
@@ -133,8 +140,31 @@ Edit `~/.config/hypr-overview/config.json`:
 | `overview.orderRightLeft` | Reverse horizontal ordering |
 | `overview.orderBottomUp` | Reverse vertical ordering |
 | `appearance.backdropOpacity` | Background dimming (0-1) |
+| `appearance.colors.*` | Custom color overrides (see below) |
 | `stashTrays.enabled` | Enable/disable stash feature |
 | `stashTrays.position` | Tray position: "bottom" or "top" |
+
+### Theming
+
+hypr-overview uses **Material Design 3** colors with automatic theme integration:
+
+**Color Priority (highest to lowest):**
+1. **matugen.json** - If `~/.config/quickshell/matugen.json` exists, colors sync automatically
+2. **config.json** - Manual color overrides in `appearance.colors`
+3. **Defaults** - Built-in MD3 dark theme
+
+**Available color options:**
+| Color | Default | Description |
+|-------|---------|-------------|
+| `backgroundColor` | `#111318` | Overview backdrop |
+| `workspaceColor` | `#1e2025` | Workspace cell background |
+| `workspaceHoverColor` | `#282a2f` | Workspace hover state |
+| `activeBorderColor` | `#abc7ff` | Active workspace border |
+| `workspaceNumberColor` | `#44474e` | Workspace number text |
+
+**Matugen Integration:**
+
+If you use [matugen](https://github.com/InioX/matugen) for dynamic theming, hypr-overview will automatically pick up colors from `~/.config/quickshell/matugen.json`. The colors update live when your theme changes.
 
 ## Integration
 
