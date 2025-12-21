@@ -89,60 +89,101 @@ Stash trays let you "park" windows temporarily. Windows are moved to a hidden wo
 
 ## Configuration
 
-Edit `~/.config/hypr-overview/config.json`:
+Config file: `~/.config/hypr-overview/config.json`
 
-```json
+<details>
+<summary><strong>Full Configuration Reference</strong></summary>
+
+```jsonc
 {
-    "overview": {
-        "rows": 2,
-        "columns": 5,
-        "scale": 0.18,
-        "orderRightLeft": false,
-        "orderBottomUp": false,
-        "centerIcons": true,
-        "showWorkspaceNumbers": true
-    },
-    "appearance": {
-        "backdropOpacity": 0.7,
-        "windowCornerRadius": 8,
-        "activeWorkspaceBorderWidth": 2,
-        "animationDuration": 200,
-        "colors": {
-            "backgroundColor": "#111318",
-            "workspaceColor": "#1e2025",
-            "workspaceHoverColor": "#282a2f",
-            "activeBorderColor": "#abc7ff",
-            "workspaceNumberColor": "#44474e"
-        }
-    },
-    "stashTrays": {
-        "enabled": true,
-        "trays": [
-            { "name": "quick", "label": "Quick Stash" },
-            { "name": "later", "label": "For Later" }
-        ],
-        "modifierKey": "Shift",
-        "secondaryModifier": "Control",
-        "showEmptyTrays": false,
-        "position": "bottom",
-        "previewScale": 0.12
+  // ─── Overview Grid ──────────────────────────────────────────
+  "overview": {
+    "rows": 2,                      // Number of workspace rows
+    "columns": 5,                   // Number of workspace columns
+    "scale": 0.18,                  // Window preview scale (0.1-0.5)
+    "orderRightLeft": false,        // Reverse horizontal ordering
+    "orderBottomUp": false,         // Reverse vertical ordering
+    "centerIcons": true,            // Center app icons on windows
+    "showWorkspaceNumbers": true    // Show workspace numbers
+  },
+
+  // ─── Appearance ─────────────────────────────────────────────
+  "appearance": {
+    "backdropOpacity": 0.7,         // Background dimming (0.0-1.0)
+    "windowCornerRadius": 8,        // Window preview corner radius
+    "activeWorkspaceBorderWidth": 2,// Active workspace border width
+    "animationDuration": 200,       // Animation speed in ms
+    "colors": {                     // Manual color overrides (optional)
+      "backgroundColor": "#111318",
+      "workspaceColor": "#1e2025",
+      "workspaceHoverColor": "#282a2f",
+      "activeBorderColor": "#abc7ff",
+      "workspaceNumberColor": "#44474e"
     }
+  },
+
+  // ─── Stash Trays ────────────────────────────────────────────
+  "stashTrays": {
+    "enabled": true,                // Enable stash feature
+    "trays": [                      // Define your trays
+      { "name": "quick", "label": "Quick Stash" },
+      { "name": "later", "label": "For Later" }
+    ],
+    "modifierKey": "Shift",         // Primary stash modifier
+    "secondaryModifier": "Control", // Secondary tray modifier
+    "showEmptyTrays": false,        // Show trays with no windows
+    "position": "bottom",           // "bottom" or "top"
+    "previewScale": 0.12            // Stashed window preview size
+  },
+
+  // ─── Icon Mappings ──────────────────────────────────────────
+  // Fix icons for apps with mismatched window class / desktop entry
+  "iconMappings": {
+    "net-runelite-client-RuneLite": "runelite",
+    "some-other-app": "icon-name"
+  },
+
+  // ─── Layout Plugin ──────────────────────────────────────────
+  "layoutPlugin": "auto"            // "auto", "hy3", or "default"
 }
 ```
 
-### Configuration Options
+</details>
 
-| Option | Description |
-|--------|-------------|
-| `overview.rows` | Number of workspace rows |
-| `overview.columns` | Number of workspace columns |
-| `overview.scale` | Window preview scale factor |
-| `overview.orderRightLeft` | Reverse horizontal ordering |
-| `overview.orderBottomUp` | Reverse vertical ordering |
-| `appearance.backdropOpacity` | Background dimming (0-1) |
-| `appearance.colors.*` | Custom color overrides (see below) |
-| `stashTrays.enabled` | Enable/disable stash feature |
-| `stashTrays.position` | Tray position: "bottom" or "top" |
+### Quick Reference
+
+| Section | Option | Default | Description |
+|---------|--------|---------|-------------|
+| `overview` | `rows` | `2` | Workspace grid rows |
+| | `columns` | `5` | Workspace grid columns |
+| | `scale` | `0.18` | Window preview scale factor |
+| | `centerIcons` | `true` | Center icons on window previews |
+| `appearance` | `backdropOpacity` | `0.7` | Background dimming (0-1) |
+| | `animationDuration` | `200` | Animation speed in ms |
+| `stashTrays` | `enabled` | `true` | Enable/disable stash feature |
+| | `position` | `"bottom"` | Tray position: `"bottom"` or `"top"` |
+| `iconMappings` | | `{}` | Window class → icon name overrides |
+| `layoutPlugin` | | `"auto"` | `"auto"`, `"hy3"`, or `"default"` |
+
+### Icon Mappings
+
+Some apps (like AppImages) have a mismatch between their window class and desktop entry, causing missing icons. Fix them with `iconMappings`:
+
+```json
+"iconMappings": {
+  "net-runelite-client-RuneLite": "runelite"
+}
+```
+
+**Finding the window class:**
+```bash
+hyprctl clients -j | jq '.[] | {class, title}'
+```
+
+**Finding available icon names:**
+```bash
+ls /usr/share/icons/Papirus/48x48/apps/ | grep -i <appname>
+```
 
 ### Theming
 
@@ -153,7 +194,6 @@ hypr-overview uses **Material Design 3** colors with automatic theme integration
 2. **config.json** - Manual color overrides in `appearance.colors`
 3. **Defaults** - Built-in MD3 dark theme
 
-**Available color options:**
 | Color | Default | Description |
 |-------|---------|-------------|
 | `backgroundColor` | `#111318` | Overview backdrop |
