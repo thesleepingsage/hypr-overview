@@ -206,16 +206,7 @@ Rectangle {
                                     width: 32
                                     height: 32
                                     visible: windowPreview.toplevel === undefined
-                                    source: {
-                                        const className = windowPreview.windowData?.class ?? "";
-                                        if (!className) return Quickshell.iconPath("application-x-executable");
-                                        // Check user-defined icon mappings first
-                                        const mapped = OverviewConfig.iconMappings[className];
-                                        if (mapped) return Quickshell.iconPath(mapped, "application-x-executable");
-                                        const entry = DesktopEntries.byId(className);
-                                        if (entry?.icon) return Quickshell.iconPath(entry.icon, "application-x-executable");
-                                        return Quickshell.iconPath(className, "application-x-executable");
-                                    }
+                                    source: OverviewConfig.resolveIconPath(windowPreview.windowData?.class ?? "")
                                 }
 
                                 // Window title tooltip

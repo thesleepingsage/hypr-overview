@@ -31,6 +31,28 @@ Singleton {
     // Icon mappings for apps with mismatched window class / desktop entry
     property var iconMappings: ({})
 
+    // Resolve icon path for a window class
+    // Priority: mappings → desktop entry → lowercase desktop entry → class name → fallback
+    function resolveIconPath(className) {
+        const fallback = "application-x-executable";
+        if (!className) return Quickshell.iconPath(fallback);
+
+        // Check user-defined icon mappings first
+        const mapped = root.iconMappings[className];
+        if (mapped) return Quickshell.iconPath(mapped, fallback);
+
+        // Try desktop entry lookup (uses StartupWMClass matching)
+        const entry = DesktopEntries.byId(className);
+        if (entry?.icon) return Quickshell.iconPath(entry.icon, fallback);
+
+        // Try lowercase
+        const lowerEntry = DesktopEntries.byId(className.toLowerCase());
+        if (lowerEntry?.icon) return Quickshell.iconPath(lowerEntry.icon, fallback);
+
+        // Fall back to class name directly
+        return Quickshell.iconPath(className, fallback);
+    }
+
     // Appearance settings
     property real backdropOpacity: 0.7
     property int windowCornerRadius: 8

@@ -67,26 +67,8 @@ Item {
 
     property bool compactMode: targetWindowHeight < 60 || targetWindowWidth < 60
 
-    // Icon resolution: Check mappings first, then desktop entry, then class name
-    property string iconPath: {
-        const className = windowData?.class ?? "";
-        if (!className) return Quickshell.iconPath("application-x-executable");
-
-        // Check user-defined icon mappings first
-        const mapped = OverviewConfig.iconMappings[className];
-        if (mapped) return Quickshell.iconPath(mapped, "application-x-executable");
-
-        // Try desktop entry lookup (uses StartupWMClass matching)
-        const entry = DesktopEntries.byId(className);
-        if (entry?.icon) return Quickshell.iconPath(entry.icon, "application-x-executable");
-
-        // Try lowercase
-        const lowerEntry = DesktopEntries.byId(className.toLowerCase());
-        if (lowerEntry?.icon) return Quickshell.iconPath(lowerEntry.icon, "application-x-executable");
-
-        // Fall back to class name directly
-        return Quickshell.iconPath(className, "application-x-executable");
-    }
+    // Icon resolution via shared helper
+    property string iconPath: OverviewConfig.resolveIconPath(windowData?.class ?? "")
 
     property bool indicateXWayland: windowData?.xwayland ?? false
 
