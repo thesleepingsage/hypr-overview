@@ -1,6 +1,6 @@
 # hypr-overview
 
-macOS Mission Control-style workspace overview for Hyprland.
+macOS Mission Control-ish-style workspace overview for Hyprland.
 
 <p align="center">
 <img src="https://img.shields.io/badge/Hyprland-58E1FF?style=flat-square&logo=hyprland&logoColor=black)" alt="Hyprland">
