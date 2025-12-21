@@ -7,3 +7,4 @@ OverviewWindow 1.0 OverviewWindow.qml
 OverviewWidget 1.0 OverviewWidget.qml
 StashTray 1.0 StashTray.qml
 StashTrayContainer 1.0 StashTrayContainer.qml
+BufferedProcess 1.0 BufferedProcess.qml

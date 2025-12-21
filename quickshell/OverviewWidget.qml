@@ -49,16 +49,17 @@ Item {
         return (monHeight - reserved) * scale;
     }
 
-    property real largeRadius: 16
-    property real smallRadius: 4
-    property real workspaceSpacing: 5
-    property real padding: 10
+    // Visual properties from config (now user-customizable)
+    property real largeRadius: OverviewConfig.largeRadius
+    property real smallRadius: OverviewConfig.smallRadius
+    property real workspaceSpacing: OverviewConfig.workspaceSpacing
+    property real padding: OverviewConfig.gridPadding
 
-    property color backgroundColor: Qt.rgba(0.1, 0.1, 0.1, 0.95)
-    property color workspaceColor: Qt.rgba(0.15, 0.15, 0.15, 1)
-    property color workspaceHoverColor: Qt.rgba(0.25, 0.25, 0.25, 1)
-    property color activeBorderColor: Qt.rgba(0.4, 0.6, 1.0, 1)
-    property color workspaceNumberColor: Qt.rgba(1, 1, 1, 0.15)
+    property color backgroundColor: OverviewConfig.backgroundColor
+    property color workspaceColor: OverviewConfig.workspaceColor
+    property color workspaceHoverColor: OverviewConfig.workspaceHoverColor
+    property color activeBorderColor: OverviewConfig.activeBorderColor
+    property color workspaceNumberColor: OverviewConfig.workspaceNumberColor
 
     // Drag state
     property int draggingFromWorkspace: -1
@@ -121,6 +122,74 @@ Item {
             if (win && win.address === address) return win;
         }
         return null;
+    }
+
+    // --- Drag Action Handlers (extracted from onReleased for clarity) ---
+
+    /**
+     * Handle window swap between two tiled windows
+     * @returns true if swap was executed
+     */
+    function handleWindowSwap(windowDelegate, targetWindow, snapBackTimer) {
+        const swapCmd = Local.Config.useHy3
+            ? `hy3:swapwindow address:${windowDelegate.address}, address:${targetWindow}`
+            : `swapwindow address:${targetWindow}`;
+        console.log(`[hypr-overview] SWAP: ${swapCmd}`);
+        Hyprland.dispatch(swapCmd);
+
+        // Wait for HyprlandData to refresh, then snap to updated positions
+        function onDataUpdated() {
+            HyprlandData.windowListUpdated.disconnect(onDataUpdated);
+            snapBackTimer.restart();
+        }
+        HyprlandData.windowListUpdated.connect(onDataUpdated);
+        HyprlandData.updateWindowList();
+        return true;
+    }
+
+    /**
+     * Handle floating window move or reposition
+     * @returns true if action was executed
+     */
+    function handleFloatingWindowAction(windowDelegate, targetWs, sourceWs) {
+        if (targetWs !== -1 && targetWs !== sourceWs) {
+            // Cross-workspace move
+            console.log(`[hypr-overview] FLOAT MOVE: ws ${sourceWs} -> ${targetWs}`);
+            Hyprland.dispatch(`movetoworkspacesilent ${targetWs}, address:${windowDelegate.winData?.address}`);
+        } else {
+            // Same-ws reposition - use absolute pixel coordinates
+            const posInWorkspaceX = windowDelegate.x - windowDelegate.xOffset;
+            const posInWorkspaceY = windowDelegate.y - windowDelegate.yOffset;
+            const posOnMonitorX = posInWorkspaceX / (windowDelegate.widthRatio * windowDelegate.scale);
+            const posOnMonitorY = posInWorkspaceY / (windowDelegate.heightRatio * windowDelegate.scale);
+            const monitorX = windowDelegate.winMonitorData?.x ?? 0;
+            const monitorY = windowDelegate.winMonitorData?.y ?? 0;
+            const absoluteX = Math.round(monitorX + posOnMonitorX);
+            const absoluteY = Math.round(monitorY + posOnMonitorY);
+            console.log(`[hypr-overview] FLOAT REPOSITION: ${absoluteX}, ${absoluteY}`);
+            Hyprland.dispatch(`movewindowpixel exact ${absoluteX} ${absoluteY}, address:${windowDelegate.winData?.address}`);
+        }
+        return true;
+    }
+
+    /**
+     * Handle tiled window move to different workspace
+     * @returns true if move was executed
+     */
+    function handleTiledWindowMove(windowDelegate, targetWs, currentWs, snapBackTimer) {
+        if (targetWs === -1 || targetWs === currentWs) return false;
+
+        console.log(`[hypr-overview] MOVE: ws ${currentWs} -> ${targetWs}`);
+        Hyprland.dispatch(`movetoworkspacesilent ${targetWs}, address:${windowDelegate.winData?.address}`);
+
+        // Wait for HyprlandData to refresh, then snap to correct position
+        function onMoveDataUpdated() {
+            HyprlandData.windowListUpdated.disconnect(onMoveDataUpdated);
+            snapBackTimer.restart();
+        }
+        HyprlandData.windowListUpdated.connect(onMoveDataUpdated);
+        HyprlandData.updateWindowList();
+        return true;
     }
 
     // Background
@@ -340,85 +409,42 @@ Item {
                         }
 
                         onReleased: {
+                            // Capture drag state before reset
                             const targetWs = root.draggingTargetWorkspace;
                             const targetWindow = root.draggingTargetWindowAddress;
-                            const sourceWs = root.draggingFromWorkspace;  // Save before reset!
-                            // Calculate workspace from VISUAL position instead of potentially stale winData
-                            // This ensures we know where the window ACTUALLY is, not where it was when overview opened
+                            const sourceWs = root.draggingFromWorkspace;
                             const currentWsFromData = windowDelegate.winData?.workspace?.id ?? -1;
                             const currentWsFromPosition = root.getWorkspaceAtPosition(windowDelegate.initX, windowDelegate.initY);
                             const currentWs = currentWsFromPosition !== -1 ? currentWsFromPosition : currentWsFromData;
+                            const isFloating = windowDelegate.winData?.floating ?? false;
 
+                            // Reset drag state
                             windowDelegate.pressed = false;
                             windowDelegate.Drag.active = false;
                             root.draggingFromWorkspace = -1;
                             root.draggingWindowAddress = "";
                             root.draggingTargetWindowAddress = "";
 
-                            // PRIORITY 1: SAME workspace + hovering over window = SWAP (tiled only)
-                            // Use sourceWs (where drag STARTED) to determine if same-workspace
-                            // Floating windows never trigger swap - they just reposition
-                            if (targetWindow !== "" && !windowDelegate.winData?.floating) {
-                                // Only SWAP if drag STARTED in the same workspace as targetWs
-                                // Cross-workspace drags (sourceWs !== targetWs) should fall through to MOVE
+                            // PRIORITY 1: Tiled window swap (same workspace, over another window)
+                            if (targetWindow !== "" && !isFloating) {
                                 if (sourceWs === targetWs || targetWs === -1) {
-                                    const swapCmd = Local.Config.useHy3
-                                        ? `hy3:swapwindow address:${windowDelegate.address}, address:${targetWindow}`
-                                        : `swapwindow address:${targetWindow}`;
-                                    console.log(`[hypr-overview] SWAP: ${swapCmd}`);
-                                    Hyprland.dispatch(swapCmd);
-
-                                    // Wait for HyprlandData to refresh, then snap to updated positions
-                                    function onDataUpdated() {
-                                        HyprlandData.windowListUpdated.disconnect(onDataUpdated);
-                                        snapBackTimer.restart();
-                                    }
-                                    HyprlandData.windowListUpdated.connect(onDataUpdated);
-                                    HyprlandData.updateWindowList();
+                                    root.handleWindowSwap(windowDelegate, targetWindow, snapBackTimer);
                                     return;
                                 }
-                                // Target window is in different workspace - fall through to MOVE path
                             }
 
-                            // FLOATING WINDOWS: Cross-ws move OR same-ws reposition with absolute pixels
-                            if (windowDelegate.winData?.floating) {
-                                if (targetWs !== -1 && targetWs !== sourceWs) {
-                                    // Cross-workspace move - just move, don't reposition
-                                    console.log(`[hypr-overview] FLOAT MOVE: ws ${sourceWs} -> ${targetWs}`);
-                                    Hyprland.dispatch(`movetoworkspacesilent ${targetWs}, address:${windowDelegate.winData?.address}`);
-                                } else {
-                                    // Same-ws reposition - use absolute pixel coordinates
-                                    // This avoids the percentage-based coordinate issues on multi-monitor
-                                    const posInWorkspaceX = windowDelegate.x - windowDelegate.xOffset;
-                                    const posInWorkspaceY = windowDelegate.y - windowDelegate.yOffset;
-                                    const posOnMonitorX = posInWorkspaceX / (windowDelegate.widthRatio * windowDelegate.scale);
-                                    const posOnMonitorY = posInWorkspaceY / (windowDelegate.heightRatio * windowDelegate.scale);
-                                    const monitorX = windowDelegate.winMonitorData?.x ?? 0;
-                                    const monitorY = windowDelegate.winMonitorData?.y ?? 0;
-                                    const absoluteX = Math.round(monitorX + posOnMonitorX);
-                                    const absoluteY = Math.round(monitorY + posOnMonitorY);
-                                    console.log(`[hypr-overview] FLOAT REPOSITION: ${absoluteX}, ${absoluteY}`);
-                                    Hyprland.dispatch(`movewindowpixel exact ${absoluteX} ${absoluteY}, address:${windowDelegate.winData?.address}`);
-                                }
+                            // PRIORITY 2: Floating window actions
+                            if (isFloating) {
+                                root.handleFloatingWindowAction(windowDelegate, targetWs, sourceWs);
                                 return;
                             }
 
-                            // TILED WINDOWS: PRIORITY 2 - DIFFERENT workspace = MOVE
-                            if (targetWs !== -1 && targetWs !== currentWs) {
-                                console.log(`[hypr-overview] MOVE: ws ${currentWs} -> ${targetWs}`);
-                                Hyprland.dispatch(`movetoworkspacesilent ${targetWs}, address:${windowDelegate.winData?.address}`);
-
-                                // Wait for HyprlandData to refresh, then snap to correct position
-                                function onMoveDataUpdated() {
-                                    HyprlandData.windowListUpdated.disconnect(onMoveDataUpdated);
-                                    snapBackTimer.restart();
-                                }
-                                HyprlandData.windowListUpdated.connect(onMoveDataUpdated);
-                                HyprlandData.updateWindowList();
+                            // PRIORITY 3: Tiled window cross-workspace move
+                            if (root.handleTiledWindowMove(windowDelegate, targetWs, currentWs, snapBackTimer)) {
                                 return;
                             }
 
-                            // TILED: Same workspace, no target = snap back
+                            // Default: Snap back to original position
                             snapBackTimer.restart();
                         }
 
@@ -430,13 +456,16 @@ Item {
                                 Hyprland.dispatch(`closewindow address:${windowDelegate.winData.address}`);
                                 event.accepted = true;
                             } else if (event.button === Qt.LeftButton) {
-                                // Check modifiers for stash operations
-                                if ((event.modifiers & Qt.ShiftModifier) && (event.modifiers & Qt.ControlModifier)) {
-                                    // Ctrl+Shift+Click: stash to secondary tray
+                                // Check modifiers for stash operations (uses configured keys from StashState)
+                                const primaryHeld = StashState.isModifierHeld(event.modifiers);
+                                const secondaryHeld = StashState.isSecondaryModifierHeld(event.modifiers);
+
+                                if (primaryHeld && secondaryHeld) {
+                                    // Primary+Secondary modifier: stash to secondary tray
                                     windowDelegate.stashWindow("later");
                                     event.accepted = true;
-                                } else if (event.modifiers & Qt.ShiftModifier) {
-                                    // Shift+Click: stash to quick tray
+                                } else if (primaryHeld) {
+                                    // Primary modifier only: stash to quick tray
                                     windowDelegate.stashWindow("quick");
                                     event.accepted = true;
                                 } else {

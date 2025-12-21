@@ -25,6 +25,47 @@ Singleton {
     property string position: OverviewConfig.stashTrays?.position ?? "bottom"
     property real previewScale: OverviewConfig.stashTrays?.previewScale ?? 0.12
 
+    /**
+     * Map configured modifier key string to Qt modifier flag
+     * Centralized utility for consistent modifier detection across all stash UI
+     */
+    function getModifierFlag(): int {
+        switch (modifierKey.toLowerCase()) {
+            case "shift": return Qt.ShiftModifier;
+            case "control": case "ctrl": return Qt.ControlModifier;
+            case "alt": return Qt.AltModifier;
+            case "meta": case "super": case "mod4": return Qt.MetaModifier;
+            default: return Qt.ShiftModifier;
+        }
+    }
+
+    /**
+     * Map secondary modifier key string to Qt modifier flag
+     */
+    function getSecondaryModifierFlag(): int {
+        switch (secondaryModifier.toLowerCase()) {
+            case "shift": return Qt.ShiftModifier;
+            case "control": case "ctrl": return Qt.ControlModifier;
+            case "alt": return Qt.AltModifier;
+            case "meta": case "super": case "mod4": return Qt.MetaModifier;
+            default: return Qt.ControlModifier;
+        }
+    }
+
+    /**
+     * Check if the primary stash modifier is held
+     */
+    function isModifierHeld(mouseModifiers: int): bool {
+        return (mouseModifiers & getModifierFlag()) !== 0;
+    }
+
+    /**
+     * Check if the secondary stash modifier is held
+     */
+    function isSecondaryModifierHeld(mouseModifiers: int): bool {
+        return (mouseModifiers & getSecondaryModifierFlag()) !== 0;
+    }
+
     // Runtime state: { "quick": [{ address, originWorkspace, originWorkspaceName, stashedAt }], ... }
     property var stashedWindows: ({})
 

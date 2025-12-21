@@ -125,118 +125,60 @@ Singleton {
         }
     }
 
-    // Accumulator for client data
-    property string _clientsBuffer: ""
+    // --- Buffered Process Components (using extracted pattern) ---
 
-    // Process: Get window/client list
-    Process {
+    BufferedProcess {
         id: getClients
         command: ["hyprctl", "clients", "-j"]
-        stdout: SplitParser {
-            splitMarker: ""
-            onRead: data => {
-                root._clientsBuffer += data;
+        logPrefix: "[hypr-overview:clients]"
+
+        onCompleted: (data) => {
+            root.windowList = data;
+            let tempWinByAddress = {};
+            for (var i = 0; i < root.windowList.length; ++i) {
+                var win = root.windowList[i];
+                tempWinByAddress[win.address] = win;
             }
-        }
-        onExited: (exitCode, exitStatus) => {
-            if (exitCode === 0 && root._clientsBuffer) {
-                try {
-                    root.windowList = JSON.parse(root._clientsBuffer)
-                    let tempWinByAddress = {};
-                    for (var i = 0; i < root.windowList.length; ++i) {
-                        var win = root.windowList[i];
-                        tempWinByAddress[win.address] = win;
-                    }
-                    root.windowByAddress = tempWinByAddress;
-                    root.addresses = root.windowList.map(win => win.address);
-                    root.windowListUpdated();  // Notify listeners that data is ready
-                } catch (e) {
-                    console.error("[hypr-overview] Failed to parse clients:", e, root._clientsBuffer.substring(0, 100));
-                }
-            }
-            root._clientsBuffer = "";
+            root.windowByAddress = tempWinByAddress;
+            root.addresses = root.windowList.map(win => win.address);
+            root.windowListUpdated();
         }
     }
 
-    // Accumulator for monitor data
-    property string _monitorsBuffer: ""
-
-    // Process: Get monitor list
-    Process {
+    BufferedProcess {
         id: getMonitors
         command: ["hyprctl", "monitors", "-j"]
-        stdout: SplitParser {
-            splitMarker: ""
-            onRead: data => {
-                root._monitorsBuffer += data;
-            }
-        }
-        onExited: (exitCode, exitStatus) => {
-            if (exitCode === 0 && root._monitorsBuffer) {
-                try {
-                    root.monitors = JSON.parse(root._monitorsBuffer);
-                } catch (e) {
-                    console.error("[hypr-overview] Failed to parse monitors:", e);
-                }
-            }
-            root._monitorsBuffer = "";
+        logPrefix: "[hypr-overview:monitors]"
+
+        onCompleted: (data) => {
+            root.monitors = data;
         }
     }
 
-    // Accumulator for workspace data
-    property string _workspacesBuffer: ""
-
-    // Process: Get workspace list
-    Process {
+    BufferedProcess {
         id: getWorkspaces
         command: ["hyprctl", "workspaces", "-j"]
-        stdout: SplitParser {
-            splitMarker: ""
-            onRead: data => {
-                root._workspacesBuffer += data;
+        logPrefix: "[hypr-overview:workspaces]"
+
+        onCompleted: (data) => {
+            root.workspaces = data;
+            let tempWorkspaceById = {};
+            for (var i = 0; i < root.workspaces.length; ++i) {
+                var ws = root.workspaces[i];
+                tempWorkspaceById[ws.id] = ws;
             }
-        }
-        onExited: (exitCode, exitStatus) => {
-            if (exitCode === 0 && root._workspacesBuffer) {
-                try {
-                    root.workspaces = JSON.parse(root._workspacesBuffer);
-                    let tempWorkspaceById = {};
-                    for (var i = 0; i < root.workspaces.length; ++i) {
-                        var ws = root.workspaces[i];
-                        tempWorkspaceById[ws.id] = ws;
-                    }
-                    root.workspaceById = tempWorkspaceById;
-                    root.workspaceIds = root.workspaces.map(ws => ws.id);
-                } catch (e) {
-                    console.error("[hypr-overview] Failed to parse workspaces:", e);
-                }
-            }
-            root._workspacesBuffer = "";
+            root.workspaceById = tempWorkspaceById;
+            root.workspaceIds = root.workspaces.map(ws => ws.id);
         }
     }
 
-    // Accumulator for active workspace data
-    property string _activeWsBuffer: ""
-
-    // Process: Get active workspace
-    Process {
+    BufferedProcess {
         id: getActiveWorkspace
         command: ["hyprctl", "activeworkspace", "-j"]
-        stdout: SplitParser {
-            splitMarker: ""
-            onRead: data => {
-                root._activeWsBuffer += data;
-            }
-        }
-        onExited: (exitCode, exitStatus) => {
-            if (exitCode === 0 && root._activeWsBuffer) {
-                try {
-                    root.activeWorkspace = JSON.parse(root._activeWsBuffer);
-                } catch (e) {
-                    console.error("[hypr-overview] Failed to parse active workspace:", e);
-                }
-            }
-            root._activeWsBuffer = "";
+        logPrefix: "[hypr-overview:activeWs]"
+
+        onCompleted: (data) => {
+            root.activeWorkspace = data;
         }
     }
 }

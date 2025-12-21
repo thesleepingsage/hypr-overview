@@ -21,6 +21,19 @@ Singleton {
     property int activeWorkspaceBorderWidth: 2
     property int animationDuration: 200
 
+    // Grid appearance (extracted from OverviewWidget magic numbers)
+    property real largeRadius: 16
+    property real smallRadius: 4
+    property real workspaceSpacing: 5
+    property real gridPadding: 10
+
+    // Colors (extracted for theming support)
+    property color backgroundColor: Qt.rgba(0.1, 0.1, 0.1, 0.95)
+    property color workspaceColor: Qt.rgba(0.15, 0.15, 0.15, 1)
+    property color workspaceHoverColor: Qt.rgba(0.25, 0.25, 0.25, 1)
+    property color activeBorderColor: Qt.rgba(0.4, 0.6, 1.0, 1)
+    property color workspaceNumberColor: Qt.rgba(1, 1, 1, 0.15)
+
     // Layout plugin detection
     // "auto" = detect at runtime, "hy3" = force hy3, "default" = force vanilla Hyprland
     property string layoutPlugin: "auto"

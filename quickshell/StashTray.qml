@@ -247,9 +247,11 @@ Rectangle {
                                     onEntered: windowPreview.hovered = true
                                     onExited: windowPreview.hovered = false
 
-                                    onClicked: {
-                                        StashState.unstashWindow(windowPreview.windowAddress, true);
-                                        console.log("[StashTray] Restored window", windowPreview.windowAddress);
+                                    onClicked: (mouse) => {
+                                        // When configured modifier is held, restore without focus (mouse stays on overview)
+                                        const shouldFocus = !StashState.isModifierHeld(mouse.modifiers);
+                                        StashState.unstashWindow(windowPreview.windowAddress, shouldFocus);
+                                        console.log("[StashTray] Restored window", windowPreview.windowAddress, "focus:", shouldFocus);
                                     }
                                 }
 

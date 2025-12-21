@@ -118,12 +118,6 @@ Item {
         anchors.fill: parent
         captureSource: OverviewState.isOpen ? root.toplevel : null
         live: true
-
-        // Rounded corners via clip
-        layer.enabled: root.cornerRadius > 0
-        layer.effect: Item {
-            // Simple corner rounding - OpacityMask would need Qt5Compat
-        }
     }
 
     // Overlay for hover/press states
