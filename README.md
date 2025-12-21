@@ -1,4 +1,4 @@
-# hypr-overview
+<h1 align="center">hypr-overview</h1>
 
 macOS Mission Control-ish-style workspace overview for Hyprland. Inspired by and extracted from [end-4's dots-hyprland](https://github.com/end-4/dots-hyprland), with refactoring and additional features.
 
