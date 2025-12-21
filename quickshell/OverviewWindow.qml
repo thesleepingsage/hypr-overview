@@ -67,10 +67,14 @@ Item {
 
     property bool compactMode: targetWindowHeight < 60 || targetWindowWidth < 60
 
-    // Icon resolution: Try desktop entry lookup first, then fall back to class name
+    // Icon resolution: Check mappings first, then desktop entry, then class name
     property string iconPath: {
         const className = windowData?.class ?? "";
         if (!className) return Quickshell.iconPath("application-x-executable");
+
+        // Check user-defined icon mappings first
+        const mapped = OverviewConfig.iconMappings[className];
+        if (mapped) return Quickshell.iconPath(mapped, "application-x-executable");
 
         // Try desktop entry lookup (uses StartupWMClass matching)
         const entry = DesktopEntries.byId(className);

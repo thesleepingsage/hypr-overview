@@ -25,5 +25,8 @@
         "showEmptyTrays": false,
         "position": "bottom",
         "previewScale": 0.12
+    },
+    "iconMappings": {
+        "net-runelite-client-RuneLite": "runelite"
     }
 }

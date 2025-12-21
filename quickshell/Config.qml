@@ -28,6 +28,9 @@ Singleton {
     property bool centerIcons: true
     property bool showWorkspaceNumbers: true
 
+    // Icon mappings for apps with mismatched window class / desktop entry
+    property var iconMappings: ({})
+
     // Appearance settings
     property real backdropOpacity: 0.7
     property int windowCornerRadius: 8
@@ -146,6 +149,11 @@ Singleton {
                 if (config.stashTrays.position !== undefined) stashConfig.position = config.stashTrays.position
                 if (config.stashTrays.previewScale !== undefined) stashConfig.previewScale = config.stashTrays.previewScale
                 root.stashTrays = stashConfig
+            }
+
+            // Icon mappings
+            if (config.iconMappings) {
+                root.iconMappings = config.iconMappings
             }
 
             console.log("[hypr-overview] Config loaded successfully")
