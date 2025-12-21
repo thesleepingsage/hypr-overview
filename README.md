@@ -4,7 +4,7 @@ macOS Mission Control-style workspace overview for Hyprland.
 
 <p align="center">
 <img src="https://img.shields.io/badge/Hyprland-58E1FF?style=flat-square&logo=hyprland&logoColor=black)" alt="Hyprland">
-<img src="!https://img.shields.io/badge/Quickshell-QML-blue?style=flat-square)" alt="Quickshell">
+<img src="https://img.shields.io/badge/Quickshell-QML-blue?style=flat-square)" alt="Quickshell">
 <img src="https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square)" alt="License">
 </p>
 
