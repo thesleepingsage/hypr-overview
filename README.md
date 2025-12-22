@@ -8,6 +8,9 @@ macOS Mission Control-ish-style workspace overview for Hyprland. Inspired by and
 <img src="https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square" alt="License">
 </p>
 
+Watch the showcase video:
+[![Video Title](https://img.youtube.com/vi/A6Ydol_6ogU/maxresdefault.jpg)](https://www.youtube.com/watch?v=A6Ydol_6ogU)
+
 ## Features
 
 - **Workspace Grid** - View all workspaces in a configurable grid layout
