@@ -7,6 +7,10 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## Unreleased
 
+### Fixed
+
+- **Standalone Mode** - Add missing shell.qml entry point so `qs --path` works correctly ([#1](https://github.com/thesleepingsage/hypr-overview/issues/1))
+
 ## 0.2.0 - 2025-12-19
 
 ### Added
