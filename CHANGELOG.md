@@ -5,7 +5,7 @@ All notable changes to hypr-overview are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
-## Unreleased
+## 0.2.1 - 2025-12-26
 
 ### Fixed
 
@@ -60,5 +60,6 @@ Initial release!
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| 0.2.1 | 2025-12-26 | Standalone mode fix |
 | 0.2.0 | 2025-12-19 | Stash tray feature for parking windows |
 | 0.1.0 | 2025-12-17 | Initial release with core overview functionality |
