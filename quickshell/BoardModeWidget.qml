@@ -7,6 +7,10 @@ Item {
     anchors.fill: parent
     focus: true
 
+    // Monitor data for stash tray (use focused monitor)
+    readonly property var focusedMonitor: Hyprland.focusedMonitor
+    readonly property var monitorData: HyprlandData.monitors.find(m => m.id === focusedMonitor?.id)
+
     // Background
     Rectangle {
         anchors.fill: parent
@@ -48,6 +52,8 @@ Item {
     StashTrayContainer {
         anchors.bottom: parent.bottom
         anchors.horizontalCenter: parent.horizontalCenter
+        monitorData: boardCanvas.monitorData
+        widgetMonitor: boardCanvas.monitorData
     }
 
     // Keyboard shortcuts

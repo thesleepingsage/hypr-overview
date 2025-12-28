@@ -49,6 +49,15 @@ Scope {
         function unstashAll(trayName: string): void {
             StashState.unstashAll(trayName || "quick")
         }
+
+        // Mode switching (Board Mode v2)
+        function setMode(mode: string): void {
+            OverviewState.setMode(mode)
+        }
+
+        function toggleMode(): void {
+            OverviewState.toggleMode()
+        }
     }
 
     // GlobalShortcut for keybind integration - only create when in shell.qml context (no screen)
@@ -173,13 +182,34 @@ Scope {
             Keys.onUpPressed: navigateWorkspace(0, -1)
             Keys.onDownPressed: navigateWorkspace(0, 1)
             Keys.onReturnPressed: OverviewState.close()
+
+            // Mode toggle: M key switches between Grid and Board mode
+            Keys.onPressed: (event) => {
+                if (event.key === Qt.Key_M) {
+                    OverviewState.toggleMode()
+                    event.accepted = true
+                }
+            }
         }
 
-        // Center the overview widget
-        OverviewWidget {
-            id: overviewWidget
+        // Grid Mode: Traditional workspace grid (default)
+        Loader {
+            id: gridModeLoader
+            active: OverviewState.currentMode === "grid"
             anchors.centerIn: parent
-            panelWindow: panel
+            sourceComponent: OverviewWidget {
+                panelWindow: panel
+            }
+        }
+
+        // Board Mode: Freeform workspace clusters
+        Loader {
+            id: boardModeLoader
+            active: OverviewState.currentMode === "board"
+            anchors.fill: parent
+            sourceComponent: BoardModeWidget {
+                // BoardModeWidget handles its own layout and positioning
+            }
         }
 
         function navigateWorkspace(dx, dy) {
