@@ -50,8 +50,8 @@ Item {
     readonly property real thumbnailWidth: Math.max(80, width - windowPadding * 2 - maxCascadeX)
     readonly property real thumbnailHeight: Math.max(60, height - windowPadding * 2 - 24 - maxCascadeY)  // 24 for label
 
-    // Z-order: dragging on top, then active, then by ID
-    z: isDragging ? 1000 : (isActive ? 100 : workspaceId)
+    // Z-order: dragging on top, then fanned, then active, then by ID
+    z: isDragging ? 1000 : (isFanned ? 500 : (isActive ? 100 : workspaceId))
 
     // Clipboard-style backing rectangle
     Rectangle {
@@ -125,6 +125,11 @@ Item {
                 MouseArea {
                     anchors.fill: parent
                     onClicked: {
+                        // Collapse fan state if active
+                        if (cluster.isFanned) {
+                            cluster.isFanned = false
+                        }
+
                         // Focus window and close overview
                         const address = windowDelegate.windowData?.address
                         if (address) {
