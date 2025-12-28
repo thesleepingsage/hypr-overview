@@ -125,19 +125,17 @@ Singleton {
 
     // Board mode visual settings
     property var boardMode: ({
-        clusterWidth: 280,
-        clusterHeight: 200,
-        clusterSpacing: 30,
-        cascadeOffsetX: 20,
-        cascadeOffsetY: 25,
-        showEmptyWorkspaces: true,
-        padding: 40
+        scale: 0.20,                   // Base scale factor for clusters
+        minClusterSize: 150,           // Minimum cluster dimension (pixels)
+        maxClusterSize: 600,           // Maximum cluster dimension (pixels)
+        clusterSpacing: 30,            // Spacing between clusters in auto-layout
+        showEmptyWorkspaces: true,     // Show workspaces with no windows
+        padding: 40                    // Padding from screen edges
     })
 
     // Configurable modifier keys for all interactions
     property var modifiers: ({
         clusterDrag: "Ctrl",           // Modifier for dragging clusters
-        fanReveal: "Alt",              // Modifier for fanning windows
         stashWindow: "Shift",          // Modifier for stashing (existing)
         stashSecondary: "Ctrl+Shift"   // Modifier for secondary tray (existing)
     })

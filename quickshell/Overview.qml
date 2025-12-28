@@ -193,9 +193,10 @@ Scope {
         }
 
         // Grid Mode: Traditional workspace grid (default)
+        // Hidden during first-run choice dialog
         Loader {
             id: gridModeLoader
-            active: OverviewState.currentMode === "grid"
+            active: OverviewState.currentMode === "grid" && !OverviewState.isFirstRun
             anchors.centerIn: parent
             sourceComponent: OverviewWidget {
                 panelWindow: panel
@@ -203,9 +204,10 @@ Scope {
         }
 
         // Board Mode: Freeform workspace clusters
+        // Hidden during first-run choice dialog
         Loader {
             id: boardModeLoader
-            active: OverviewState.currentMode === "board"
+            active: OverviewState.currentMode === "board" && !OverviewState.isFirstRun
             anchors.fill: parent
             sourceComponent: BoardModeWidget {
                 // BoardModeWidget handles its own layout and positioning

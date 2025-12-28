@@ -25,19 +25,21 @@ Item {
     }
 
     // Workspace clusters
+    // Calculate total workspaces for dynamic sizing
+    readonly property var workspaceList: {
+        const allWorkspaces = HyprlandData.workspaces
+        if (OverviewConfig.boardMode.showEmptyWorkspaces) {
+            return allWorkspaces
+        }
+        return allWorkspaces.filter(ws => {
+            return HyprlandData.toplevelsForWorkspace(ws.id).length > 0
+        })
+    }
+    readonly property int workspaceCount: workspaceList.length
+
     Repeater {
         id: clusterRepeater
-        model: {
-            // Filter workspaces based on config
-            const allWorkspaces = HyprlandData.workspaces
-            if (OverviewConfig.boardMode.showEmptyWorkspaces) {
-                return allWorkspaces
-            }
-            // Only show workspaces with windows
-            return allWorkspaces.filter(ws => {
-                return HyprlandData.toplevelsForWorkspace(ws.id).length > 0
-            })
-        }
+        model: boardCanvas.workspaceList
 
         delegate: WorkspaceCluster {
             required property var modelData
@@ -45,6 +47,7 @@ Item {
             workspaceId: modelData.id
             workspaceData: modelData
             isActive: modelData.id === HyprlandData.activeWorkspace?.id
+            totalWorkspaces: boardCanvas.workspaceCount  // For dynamic sizing
         }
     }
 
@@ -74,16 +77,12 @@ Item {
         }
     }
 
-    // Collapse all fanned clusters when clicking background
+    // Background click closes overview
     MouseArea {
         anchors.fill: parent
         z: -1  // Behind everything
         onClicked: {
-            // Collapse all fanned clusters
-            for (var i = 0; i < clusterRepeater.count; i++) {
-                const item = clusterRepeater.itemAt(i)
-                if (item) item.isFanned = false
-            }
+            OverviewState.close()
         }
     }
 }

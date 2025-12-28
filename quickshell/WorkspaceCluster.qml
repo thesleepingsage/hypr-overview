@@ -9,6 +9,7 @@ Item {
     required property int workspaceId
     required property var workspaceData
     required property bool isActive
+    required property int totalWorkspaces  // For dynamic sizing
 
     // Position management - use state position, but allow drag to override
     property point statePosition: ClusterPositionState.getPosition(workspaceId)
@@ -27,31 +28,59 @@ Item {
         }
     }
 
-    // Sizing from config
-    width: OverviewConfig.boardMode.clusterWidth
-    height: OverviewConfig.boardMode.clusterHeight
-
     // State
     property bool isDragging: false
-    property bool isFanned: false
 
     // Windows for this workspace
     property var windows: HyprlandData.toplevelsForWorkspace(workspaceId)
     property int windowCount: windows.length
 
-    // Cascade layout settings
-    readonly property real cascadeOffsetX: OverviewConfig.boardMode.cascadeOffsetX
-    readonly property real cascadeOffsetY: OverviewConfig.boardMode.cascadeOffsetY
-    readonly property real windowPadding: 10
+    // ========== DYNAMIC SIZING ==========
+    // Get monitor data for this workspace (use first monitor as reference)
+    readonly property var clusterMonitorData: {
+        const monitors = HyprlandData.monitors
+        if (monitors && monitors.length > 0) {
+            return monitors[0]
+        }
+        return { width: 1920, height: 1080, x: 0, y: 0, reserved: [0, 0, 0, 0] }
+    }
 
-    // Calculate thumbnail size to fit within cluster (accounting for cascade offset)
-    readonly property real maxCascadeX: Math.max(0, (windowCount - 1)) * cascadeOffsetX
-    readonly property real maxCascadeY: Math.max(0, (windowCount - 1)) * cascadeOffsetY
-    readonly property real thumbnailWidth: Math.max(80, width - windowPadding * 2 - maxCascadeX)
-    readonly property real thumbnailHeight: Math.max(60, height - windowPadding * 2 - 24 - maxCascadeY)  // 24 for label
+    // Base scale from config
+    readonly property real baseScale: OverviewConfig.boardMode.scale ?? 0.20
 
-    // Z-order: dragging on top, then fanned, then active, then by ID
-    z: isDragging ? 1000 : (isFanned ? 500 : (isActive ? 100 : workspaceId))
+    // Dynamic scale: fewer workspaces = larger clusters
+    // Formula: baseScale * scaleFactor where scaleFactor = 2 / sqrt(count)
+    readonly property real dynamicScale: {
+        const count = Math.max(1, totalWorkspaces)
+        const scaleFactor = Math.min(2.0, Math.max(0.5, 2.0 / Math.sqrt(count)))
+        return baseScale * scaleFactor
+    }
+
+    // Cluster dimensions maintain monitor aspect ratio
+    readonly property real monitorWidth: clusterMonitorData.width ?? 1920
+    readonly property real monitorHeight: clusterMonitorData.height ?? 1080
+    readonly property real reservedLeft: clusterMonitorData.reserved?.[0] ?? 0
+    readonly property real reservedTop: clusterMonitorData.reserved?.[1] ?? 0
+    readonly property real reservedRight: clusterMonitorData.reserved?.[2] ?? 0
+    readonly property real reservedBottom: clusterMonitorData.reserved?.[3] ?? 0
+
+    // Effective monitor size (minus reserved areas like panels)
+    readonly property real effectiveWidth: monitorWidth - reservedLeft - reservedRight
+    readonly property real effectiveHeight: monitorHeight - reservedTop - reservedBottom
+
+    // Final cluster size (clamped to min/max)
+    readonly property real minSize: OverviewConfig.boardMode.minClusterSize ?? 150
+    readonly property real maxSize: OverviewConfig.boardMode.maxClusterSize ?? 600
+
+    width: Math.max(minSize, Math.min(maxSize, effectiveWidth * dynamicScale))
+    height: Math.max(minSize * (effectiveHeight / effectiveWidth),
+                     Math.min(maxSize * (effectiveHeight / effectiveWidth), effectiveHeight * dynamicScale))
+
+    // Scale for window rendering (cluster size / monitor size)
+    readonly property real clusterScale: width / effectiveWidth
+
+    // Z-order: dragging on top, then active, then by ID
+    z: isDragging ? 1000 : (isActive ? 100 : workspaceId)
 
     // Clipboard-style backing rectangle
     Rectangle {
@@ -61,6 +90,7 @@ Item {
         border.color: isActive ? OverviewConfig.activeBorderColor : OverviewConfig.workspaceNumberColor
         border.width: isActive ? OverviewConfig.activeWorkspaceBorderWidth : 1
         radius: OverviewConfig.largeRadius
+        clip: true  // Clip windows to cluster bounds (like Grid Mode)
 
         // Workspace label
         Text {
@@ -71,71 +101,54 @@ Item {
             color: OverviewConfig.workspaceNumberColor
             font.bold: isActive
             font.pixelSize: 14
+            z: 100  // Above windows
         }
-    }
 
-    // Cascading windows within cluster
-    Item {
-        id: windowContainer
-        anchors.fill: parent
-        anchors.topMargin: 24  // Below workspace label
-        anchors.margins: cluster.windowPadding
-        clip: true
+        // Windows container - mirrors Grid Mode rendering
+        Item {
+            id: windowSpace
+            anchors.fill: parent
 
-        Repeater {
-            id: windowRepeater
-            model: cluster.windows
+            Repeater {
+                id: windowRepeater
+                model: cluster.windows
 
-            delegate: OverviewWindow {
-                id: windowDelegate
-                required property var modelData
-                required property int index
+                delegate: OverviewWindow {
+                    id: windowDelegate
+                    required property var modelData
+                    required property int index
 
-                // Cascade mode properties
-                cascadeMode: true
-                cascadeIndex: index
+                    // Grid Mode rendering (not cascade)
+                    cascadeMode: false
 
-                // Calculate position based on fan state
-                cascadeX: cluster.isFanned
-                    ? (index % 3) * (cluster.thumbnailWidth * 0.5 + 10)
-                    : index * cluster.cascadeOffsetX
-                cascadeY: cluster.isFanned
-                    ? Math.floor(index / 3) * (cluster.thumbnailHeight * 0.5 + 10)
-                    : index * cluster.cascadeOffsetY
+                    // Scale matches cluster scale
+                    scale: cluster.clusterScale
 
-                // Thumbnail size
-                cascadeWidth: cluster.thumbnailWidth
-                cascadeHeight: cluster.thumbnailHeight
+                    // No offset - windows position relative to cluster origin
+                    xOffset: 0
+                    yOffset: 0
 
-                // Window data
-                toplevel: modelData
-                windowData: {
-                    // Get hyprctl client data for this toplevel
-                    const address = `0x${modelData.HyprlandToplevel?.address ?? ""}`
-                    return HyprlandData.windowByAddress[address] ?? {}
-                }
-                monitorData: null  // Not used in cascade mode
-                widgetMonitor: null  // Not used in cascade mode
+                    // Monitor data for coordinate calculation
+                    monitorData: cluster.clusterMonitorData
+                    widgetMonitor: cluster.clusterMonitorData
 
-                // Animate cascade ↔ fan transitions
-                Behavior on cascadeX { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                Behavior on cascadeY { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                    // Window data
+                    toplevel: modelData
+                    windowData: {
+                        const address = `0x${modelData.HyprlandToplevel?.address ?? ""}`
+                        return HyprlandData.windowByAddress[address] ?? {}
+                    }
 
-                // Click to focus window
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: {
-                        // Collapse fan state if active
-                        if (cluster.isFanned) {
-                            cluster.isFanned = false
+                    // Click to focus window
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            const address = windowDelegate.windowData?.address
+                            if (address) {
+                                Hyprland.dispatch(`focuswindow address:${address}`)
+                            }
+                            OverviewState.close()
                         }
-
-                        // Focus window and close overview
-                        const address = windowDelegate.windowData?.address
-                        if (address) {
-                            Hyprland.dispatch(`focuswindow address:${address}`)
-                        }
-                        OverviewState.close()
                     }
                 }
             }
@@ -146,7 +159,7 @@ Item {
     scale: isDragging ? 1.02 : 1.0
     Behavior on scale { NumberAnimation { duration: 100 } }
 
-    // Cluster drag area (backing only, windows have their own)
+    // Cluster drag area
     MouseArea {
         id: clusterDragArea
         anchors.fill: backing
@@ -165,16 +178,6 @@ Item {
                 ClusterPositionState.setPosition(workspaceId, cluster.x, cluster.y)
                 cluster.isDragging = false
                 clusterDragArea.drag.target = null
-            }
-        }
-
-        // Configurable modifier+click to fan windows
-        onClicked: (mouse) => {
-            if (OverviewConfig.isModifierActive("fanReveal", mouse.modifiers)) {
-                // Only fan if there are multiple windows to reveal
-                if (cluster.windowCount > 1) {
-                    cluster.isFanned = !cluster.isFanned
-                }
             }
         }
     }

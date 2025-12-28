@@ -23,22 +23,23 @@ Item {
     Rectangle {
         id: dialog
         anchors.centerIn: parent
-        width: 500
-        height: 340
+        width: 480
+        height: 320
         radius: 16
-        color: Qt.rgba(0.15, 0.15, 0.15, 0.95)
+        color: Qt.rgba(0.12, 0.12, 0.12, 0.95)
         border.color: Qt.rgba(1, 1, 1, 0.1)
         border.width: 1
 
         Column {
             anchors.fill: parent
-            anchors.margins: 32
-            spacing: 24
+            anchors.margins: 28
+            anchors.bottomMargin: 32
+            spacing: 16
 
             // Title
             Text {
                 text: "Choose Your Overview Style"
-                font.pixelSize: 24
+                font.pixelSize: 22
                 font.bold: true
                 color: "white"
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -47,8 +48,8 @@ Item {
             // Subtitle
             Text {
                 text: "You can change this anytime by pressing M while the overview is open"
-                font.pixelSize: 14
-                color: Qt.rgba(1, 1, 1, 0.6)
+                font.pixelSize: 13
+                color: Qt.rgba(1, 1, 1, 0.5)
                 anchors.horizontalCenter: parent.horizontalCenter
                 wrapMode: Text.WordWrap
                 width: parent.width
@@ -56,12 +57,12 @@ Item {
             }
 
             // Spacer
-            Item { width: 1; height: 8 }
+            Item { width: 1; height: 4 }
 
             // Mode options row
             Row {
                 anchors.horizontalCenter: parent.horizontalCenter
-                spacing: 24
+                spacing: 20
 
                 // Grid Mode option
                 ModeOption {
@@ -105,8 +106,8 @@ Item {
         property bool isRecommended: false
         signal selected()
 
-        width: 200
-        height: 180
+        width: 195
+        height: 165
         radius: 12
         color: mouseArea.containsMouse ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(1, 1, 1, 0.08)
         border.color: mouseArea.containsMouse ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(1, 1, 1, 0.15)
@@ -121,15 +122,15 @@ Item {
             anchors.top: parent.top
             anchors.topMargin: -8
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 90
-            height: 20
-            radius: 10
+            width: 85
+            height: 18
+            radius: 9
             color: "#4CAF50"
 
             Text {
                 anchors.centerIn: parent
                 text: "Recommended"
-                font.pixelSize: 10
+                font.pixelSize: 9
                 font.bold: true
                 color: "white"
             }
@@ -137,14 +138,14 @@ Item {
 
         Column {
             anchors.fill: parent
-            anchors.margins: 16
-            anchors.topMargin: option.isRecommended ? 20 : 16
-            spacing: 12
+            anchors.margins: 14
+            anchors.topMargin: option.isRecommended ? 16 : 14
+            spacing: 8
 
             // Icon
             Text {
                 text: option.iconText
-                font.pixelSize: 48
+                font.pixelSize: 36
                 color: "white"
                 anchors.horizontalCenter: parent.horizontalCenter
             }
@@ -152,7 +153,7 @@ Item {
             // Mode name
             Text {
                 text: option.modeName
-                font.pixelSize: 16
+                font.pixelSize: 15
                 font.bold: true
                 color: "white"
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -161,12 +162,13 @@ Item {
             // Description
             Text {
                 text: option.modeDescription
-                font.pixelSize: 12
-                color: Qt.rgba(1, 1, 1, 0.7)
+                font.pixelSize: 11
+                color: Qt.rgba(1, 1, 1, 0.6)
                 anchors.horizontalCenter: parent.horizontalCenter
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
                 width: parent.width
+                lineHeight: 1.2
             }
         }
 
