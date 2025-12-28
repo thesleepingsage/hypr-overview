@@ -117,6 +117,87 @@ Singleton {
     property bool _hy3Detected: false
     readonly property bool useHy3: layoutPlugin === "hy3" || (layoutPlugin === "auto" && _hy3Detected)
 
+    // --- Board Mode v2 Settings ---
+
+    // Mode preference (persisted to config)
+    property string defaultMode: "grid"  // "grid" | "board"
+    property bool modeChosen: false      // false = show first-run choice dialog
+
+    // Board mode visual settings
+    property var boardMode: ({
+        clusterWidth: 280,
+        clusterHeight: 200,
+        clusterSpacing: 30,
+        cascadeOffsetX: 20,
+        cascadeOffsetY: 25,
+        showEmptyWorkspaces: true,
+        padding: 40
+    })
+
+    // Configurable modifier keys for all interactions
+    property var modifiers: ({
+        clusterDrag: "Ctrl",           // Modifier for dragging clusters
+        fanReveal: "Alt",              // Modifier for fanning windows
+        stashWindow: "Shift",          // Modifier for stashing (existing)
+        stashSecondary: "Ctrl+Shift"   // Modifier for secondary tray (existing)
+    })
+
+    // Helper to map modifier names to Qt flags
+    readonly property var _modifierMap: ({
+        "Ctrl": Qt.ControlModifier,
+        "Alt": Qt.AltModifier,
+        "Shift": Qt.ShiftModifier,
+        "Super": Qt.MetaModifier,
+        "Ctrl+Shift": Qt.ControlModifier | Qt.ShiftModifier,
+        "Ctrl+Alt": Qt.ControlModifier | Qt.AltModifier,
+        "Alt+Shift": Qt.AltModifier | Qt.ShiftModifier
+    })
+
+    // Check if configured modifier for an action is currently active
+    function isModifierActive(action, eventModifiers) {
+        const modifierName = modifiers[action]
+        if (!modifierName) {
+            console.warn("[hypr-overview] Unknown modifier action:", action)
+            return false
+        }
+
+        const required = _modifierMap[modifierName] ?? 0
+        // Use eventModifiers if provided, otherwise check Quickshell global state
+        const active = (eventModifiers !== undefined) ? eventModifiers : 0
+        return (active & required) === required
+    }
+
+    // Save mode preference to config file
+    function setDefaultMode(mode) {
+        if (mode !== "grid" && mode !== "board") return
+
+        root.defaultMode = mode
+        root.modeChosen = true
+
+        // Write updated config to file
+        _saveConfig()
+    }
+
+    // Internal: save current config state to file
+    function _saveConfig() {
+        // Read current config, update mode settings, write back
+        const currentContent = configFileView.text() || "{}"
+        let config = {}
+        try {
+            config = JSON.parse(currentContent)
+        } catch (e) {
+            config = {}
+        }
+
+        // Update mode settings
+        config.defaultMode = root.defaultMode
+        config.modeChosen = root.modeChosen
+
+        // Write back
+        const newContent = JSON.stringify(config, null, 2)
+        configWriter.write(newContent)
+    }
+
     // Config file path
     readonly property string configPath: Quickshell.env("HOME") + "/.config/hypr-overview/config.json"
 
