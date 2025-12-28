@@ -180,20 +180,30 @@ Singleton {
 
     // Internal: save current config state to file
     function _saveConfig() {
-        // Read current config, update mode settings, write back
-        const currentContent = configFileView.text() || "{}"
-        let config = {}
-        try {
-            config = JSON.parse(currentContent)
-        } catch (e) {
-            config = {}
+        // Build complete config from current state (preserves all settings)
+        const config = {
+            overview: {
+                rows: root.rows,
+                columns: root.columns,
+                scale: root.scale,
+                orderRightLeft: root.orderRightLeft,
+                orderBottomUp: root.orderBottomUp,
+                centerIcons: root.centerIcons,
+                showWorkspaceNumbers: root.showWorkspaceNumbers
+            },
+            appearance: {
+                backdropOpacity: root.backdropOpacity,
+                windowCornerRadius: root.windowCornerRadius,
+                activeWorkspaceBorderWidth: root.activeWorkspaceBorderWidth,
+                animationDuration: root.animationDuration
+            },
+            iconMappings: root.iconMappings,
+            defaultMode: root.defaultMode,
+            modeChosen: root.modeChosen,
+            boardMode: root.boardMode,
+            modifiers: root.modifiers
         }
 
-        // Update mode settings
-        config.defaultMode = root.defaultMode
-        config.modeChosen = root.modeChosen
-
-        // Write back
         const newContent = JSON.stringify(config, null, 2)
         configWriter.write(newContent)
     }
