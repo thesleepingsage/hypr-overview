@@ -24,6 +24,14 @@ Item {
     property real xOffset: 0
     property real yOffset: 0
 
+    // Cascade mode (Board Mode) - when true, position is simplified for cluster layout
+    property bool cascadeMode: false
+    property int cascadeIndex: 0
+    property real cascadeX: 0       // X position within cluster
+    property real cascadeY: 0       // Y position within cluster
+    property real cascadeWidth: 200 // Fixed width for cluster thumbnail
+    property real cascadeHeight: 140 // Fixed height for cluster thumbnail
+
     // Interaction state (set by dragArea in OverviewWidget.qml)
     property bool hovered: false
     property bool pressed: false
@@ -72,14 +80,17 @@ Item {
 
     property bool indicateXWayland: windowData?.xwayland ?? false
 
-    // Position and size
-    x: initX
-    y: initY
-    width: targetWindowWidth
-    height: targetWindowHeight
+    // Position and size - cascade mode uses simplified layout
+    x: cascadeMode ? cascadeX : initX
+    y: cascadeMode ? cascadeY : initY
+    width: cascadeMode ? cascadeWidth : targetWindowWidth
+    height: cascadeMode ? cascadeHeight : targetWindowHeight
 
-    // Dim windows from other monitors
-    opacity: (windowData?.monitor ?? -1) == (widgetMonitor?.id ?? -1) ? 1.0 : 0.4
+    // Z-order: in cascade mode, later windows on top
+    z: cascadeMode ? cascadeIndex : 0
+
+    // Dim windows from other monitors (only in grid mode)
+    opacity: cascadeMode ? 1.0 : ((windowData?.monitor ?? -1) == (widgetMonitor?.id ?? -1) ? 1.0 : 0.4)
 
     // Corner radius (can be set by parent)
     property real cornerRadius: OverviewConfig.windowCornerRadius
