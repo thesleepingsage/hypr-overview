@@ -259,9 +259,53 @@ Singleton {
                 root.iconMappings = config.iconMappings
             }
 
+            // Board mode settings (v2)
+            if (config.defaultMode !== undefined) root.defaultMode = config.defaultMode
+            if (config.modeChosen !== undefined) root.modeChosen = config.modeChosen
+
+            if (config.boardMode) {
+                let boardConfig = root.boardMode
+                if (config.boardMode.clusterWidth !== undefined) boardConfig.clusterWidth = config.boardMode.clusterWidth
+                if (config.boardMode.clusterHeight !== undefined) boardConfig.clusterHeight = config.boardMode.clusterHeight
+                if (config.boardMode.clusterSpacing !== undefined) boardConfig.clusterSpacing = config.boardMode.clusterSpacing
+                if (config.boardMode.cascadeOffsetX !== undefined) boardConfig.cascadeOffsetX = config.boardMode.cascadeOffsetX
+                if (config.boardMode.cascadeOffsetY !== undefined) boardConfig.cascadeOffsetY = config.boardMode.cascadeOffsetY
+                if (config.boardMode.showEmptyWorkspaces !== undefined) boardConfig.showEmptyWorkspaces = config.boardMode.showEmptyWorkspaces
+                if (config.boardMode.padding !== undefined) boardConfig.padding = config.boardMode.padding
+                root.boardMode = boardConfig
+            }
+
+            if (config.modifiers) {
+                let modConfig = root.modifiers
+                if (config.modifiers.clusterDrag !== undefined) modConfig.clusterDrag = config.modifiers.clusterDrag
+                if (config.modifiers.fanReveal !== undefined) modConfig.fanReveal = config.modifiers.fanReveal
+                if (config.modifiers.stashWindow !== undefined) modConfig.stashWindow = config.modifiers.stashWindow
+                if (config.modifiers.stashSecondary !== undefined) modConfig.stashSecondary = config.modifiers.stashSecondary
+                root.modifiers = modConfig
+            }
+
             console.log("[hypr-overview] Config loaded successfully")
         } catch (e) {
             console.error("[hypr-overview] Failed to parse config:", e)
+        }
+    }
+
+    // Process for saving config changes
+    Process {
+        id: configWriter
+        property string jsonData: ""
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode !== 0) {
+                console.error("[hypr-overview] Failed to save config:", exitCode)
+            } else {
+                console.log("[hypr-overview] Config saved successfully")
+            }
+        }
+
+        function write(content) {
+            // Write config using bash to ensure atomicity
+            configWriter.command = ["bash", "-c", `mkdir -p "$(dirname '${root.configPath}')" && echo '${content}' > '${root.configPath}'`]
+            configWriter.running = true
         }
     }
 
