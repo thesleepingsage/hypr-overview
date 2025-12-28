@@ -212,6 +212,11 @@ Scope {
             }
         }
 
+        // First-run mode choice dialog (shows on first launch)
+        FirstRunChoice {
+            z: 1000  // Always on top
+        }
+
         function navigateWorkspace(dx, dy) {
             const monitor = Hyprland.monitorFor(panel.screen)
             const currentWs = monitor.activeWorkspace?.id ?? 1
