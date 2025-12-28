@@ -10,9 +10,22 @@ Item {
     required property var workspaceData
     required property bool isActive
 
-    // Position from ClusterPositionState
-    x: ClusterPositionState.getPosition(workspaceId).x
-    y: ClusterPositionState.getPosition(workspaceId).y
+    // Position management - use state position, but allow drag to override
+    property point statePosition: ClusterPositionState.getPosition(workspaceId)
+
+    // Initialize position from state on creation
+    Component.onCompleted: {
+        x = statePosition.x
+        y = statePosition.y
+    }
+
+    // Sync position from state when not dragging and state changes
+    onStatePositionChanged: {
+        if (!isDragging) {
+            x = statePosition.x
+            y = statePosition.y
+        }
+    }
 
     // Sizing from config
     width: OverviewConfig.boardMode.clusterWidth
