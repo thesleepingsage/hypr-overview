@@ -91,7 +91,7 @@ Item {
         return ""
     }
 
-    // ========== FIXED SCALE (like Grid Mode) ==========
+    // ========== BOARD MODE SCALE ==========
     // Get monitor data for this workspace's actual monitor (for correct aspect ratio)
     readonly property var clusterMonitorData: {
         const monitors = HyprlandData.monitors
@@ -106,8 +106,8 @@ Item {
         return wsMonitor ?? monitors[0]
     }
 
-    // Fixed scale - same as Grid Mode
-    readonly property real clusterScale: OverviewConfig.scale
+    // Board mode scale from config (separate from grid mode scale)
+    readonly property real clusterScale: OverviewConfig.boardMode.scale
 
     // Monitor dimensions
     readonly property real monitorWidth: clusterMonitorData.width ?? 1920
@@ -288,8 +288,8 @@ Item {
                     // NO cascadeMode - use OverviewWindow's built-in initX/initY calculations
                     // This is exactly how Grid Mode does it (OverviewWidget.qml lines 347-358)
 
-                    // Scale - same as Grid Mode
-                    scale: OverviewConfig.scale
+                    // Scale - uses board mode scale for consistency
+                    scale: OverviewConfig.boardMode.scale
 
                     // Monitor data - use window's actual monitor (like Grid Mode lines 344-345)
                     property int winMonitorId: windowData?.monitor ?? 0
