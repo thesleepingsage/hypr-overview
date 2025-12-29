@@ -40,7 +40,7 @@
         },
         "centerIcons": {
           "type": "boolean",
-          "description": "Center application icons within window previews",
+          "description": "Icon position in window previews: true = centered (larger, 35% of preview), false = top-left corner (smaller, 15% of preview)",
           "default": true
         },
         "showWorkspaceNumbers": {
@@ -247,9 +247,9 @@
         }
       }
     },
-    "defaultMode": {
+    "activeMode": {
       "type": "string",
-      "description": "Default overview mode to use",
+      "description": "Currently selected overview mode (persisted when user switches modes)",
       "enum": [
         "grid",
         "board"
@@ -260,9 +260,9 @@
         "Board mode: Free-form draggable workspace clusters"
       ]
     },
-    "modeChosen": {
+    "initialSetupDone": {
       "type": "boolean",
-      "description": "Whether the user has made their initial mode choice (hides first-run dialog)",
+      "description": "Whether the user has completed initial setup (hides first-run mode selection dialog)",
       "default": false
     },
     "boardMode": {

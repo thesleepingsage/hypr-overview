@@ -9,11 +9,11 @@ Singleton {
 
     // Board Mode v2: Mode management
     property string currentMode: "grid"  // "grid" | "board" - default until Config loads
-    readonly property bool isFirstRun: !OverviewConfig.modeChosen
+    readonly property bool isFirstRun: !OverviewConfig.initialSetupDone
 
     // Initialize from Config after both singletons are ready
     Component.onCompleted: {
-        currentMode = OverviewConfig.defaultMode
+        currentMode = OverviewConfig.activeMode
     }
 
     function setMode(mode) {
@@ -22,7 +22,7 @@ Singleton {
             return
         }
         currentMode = mode
-        OverviewConfig.setDefaultMode(mode)
+        OverviewConfig.setActiveMode(mode)
         console.log("[hypr-overview] Mode set to:", mode)
     }
 

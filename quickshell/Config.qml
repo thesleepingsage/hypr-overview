@@ -121,8 +121,8 @@ Singleton {
     // --- Board Mode v2 Settings ---
 
     // Mode preference (persisted to config)
-    property string defaultMode: "grid"  // "grid" | "board"
-    property bool modeChosen: false      // false = show first-run choice dialog
+    property string activeMode: "grid"      // "grid" | "board" - currently selected overview mode
+    property bool initialSetupDone: false   // false = show first-run mode selection dialog
 
     // Board mode visual settings
     property var boardMode: ({
@@ -165,11 +165,11 @@ Singleton {
     }
 
     // Save mode preference to config file
-    function setDefaultMode(mode) {
+    function setActiveMode(mode) {
         if (mode !== "grid" && mode !== "board") return
 
-        root.defaultMode = mode
-        root.modeChosen = true
+        root.activeMode = mode
+        root.initialSetupDone = true
 
         // Write updated config to file
         _saveConfig()
@@ -197,8 +197,8 @@ Singleton {
             },
             iconMappings: root.iconMappings,
             stashTrays: root.stashTrays,
-            defaultMode: root.defaultMode,
-            modeChosen: root.modeChosen,
+            activeMode: root.activeMode,
+            initialSetupDone: root.initialSetupDone,
             boardMode: root.boardMode,
             modifiers: root.modifiers
         }
@@ -270,8 +270,8 @@ Singleton {
             }
 
             // Mode selection
-            if (config.defaultMode !== undefined) root.defaultMode = config.defaultMode
-            if (config.modeChosen !== undefined) root.modeChosen = config.modeChosen
+            if (config.activeMode !== undefined) root.activeMode = config.activeMode
+            if (config.initialSetupDone !== undefined) root.initialSetupDone = config.initialSetupDone
 
             // Board mode settings (shallow copy ensures binding updates trigger)
             if (config.boardMode) {
