@@ -5,25 +5,38 @@ import Quickshell
 Singleton {
     id: root
 
-    // Workspace ID -> {x, y} position mapping (session-only persistence)
+    // Workspace ID -> {xPercent, yPercent} position mapping (percentage-based for resolution independence)
     property var positions: ({})
 
     // Reactive workspace count for auto-layout calculations
     property int workspaceCount: HyprlandData.workspaces.length
 
-    // Get position for workspace, with auto-layout fallback
-    function getPosition(workspaceId) {
+    // Get position for workspace (converts percentage to pixels)
+    function getPosition(workspaceId, viewWidth, viewHeight) {
+        // Use defaults if view dimensions not available
+        const vw = viewWidth ?? 1920
+        const vh = viewHeight ?? 1080
+
         if (positions[workspaceId]) {
-            return Qt.point(positions[workspaceId].x, positions[workspaceId].y)
+            return Qt.point(
+                positions[workspaceId].xPercent * vw,
+                positions[workspaceId].yPercent * vh
+            )
         }
-        return calculateAutoPosition(workspaceId)
+        return calculateAutoPosition(workspaceId, vw, vh)
     }
 
-    // Save position after drag
-    function setPosition(workspaceId, x, y) {
+    // Save position after drag (converts pixels to percentage)
+    function setPosition(workspaceId, x, y, viewWidth, viewHeight) {
+        const vw = viewWidth ?? 1920
+        const vh = viewHeight ?? 1080
+
         // Create shallow copy to trigger binding updates
         let newPositions = Object.assign({}, positions)
-        newPositions[workspaceId] = Qt.point(x, y)
+        newPositions[workspaceId] = {
+            xPercent: x / vw,
+            yPercent: y / vh
+        }
         positions = newPositions
     }
 
@@ -32,12 +45,10 @@ Singleton {
         positions = ({})
     }
 
-    // Calculate dynamic cluster size (same formula as WorkspaceCluster)
-    function calculateClusterSize() {
-        const monitors = HyprlandData.monitors
-        const monitorData = (monitors && monitors.length > 0) ? monitors[0] : { width: 1920, height: 1080 }
-        const monitorWidth = monitorData.width ?? 1920
-        const monitorHeight = monitorData.height ?? 1080
+    // Calculate cluster size based on view dimensions (resolution-independent)
+    function calculateClusterSize(viewWidth, viewHeight) {
+        const vw = viewWidth ?? 1920
+        const vh = viewHeight ?? 1080
 
         const baseScale = OverviewConfig.boardMode.scale ?? 0.20
         const count = Math.max(workspaceCount, 1)
@@ -47,21 +58,24 @@ Singleton {
         const minSize = OverviewConfig.boardMode.minClusterSize ?? 150
         const maxSize = OverviewConfig.boardMode.maxClusterSize ?? 600
 
-        const width = Math.max(minSize, Math.min(maxSize, monitorWidth * dynamicScale))
-        const height = Math.max(minSize * (monitorHeight / monitorWidth),
-                               Math.min(maxSize * (monitorHeight / monitorWidth), monitorHeight * dynamicScale))
+        const width = Math.max(minSize, Math.min(maxSize, vw * dynamicScale))
+        const height = Math.max(minSize * (vh / vw),
+                               Math.min(maxSize * (vh / vw), vh * dynamicScale))
 
         return { width: width, height: height }
     }
 
-    // Calculate grid-based auto-layout position
-    function calculateAutoPosition(workspaceId) {
+    // Calculate grid-based auto-layout position (uses view dimensions)
+    function calculateAutoPosition(workspaceId, viewWidth, viewHeight) {
+        const vw = viewWidth ?? 1920
+        const vh = viewHeight ?? 1080
+
         const count = Math.max(workspaceCount, 1)
         const cols = Math.ceil(Math.sqrt(count))
         const row = Math.floor((workspaceId - 1) / cols)
         const col = (workspaceId - 1) % cols
 
-        const clusterSize = calculateClusterSize()
+        const clusterSize = calculateClusterSize(vw, vh)
         const spacing = OverviewConfig.boardMode.clusterSpacing
         const padding = OverviewConfig.boardMode.padding
 
