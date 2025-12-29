@@ -465,11 +465,13 @@ Item {
 
                                 if (primaryHeld && secondaryHeld) {
                                     // Primary+Secondary modifier: stash to secondary tray
-                                    windowDelegate.stashWindow("later");
+                                    const secondaryTray = StashState.trays[1]?.name ?? "later";
+                                    windowDelegate.stashWindow(secondaryTray);
                                     event.accepted = true;
                                 } else if (primaryHeld) {
-                                    // Primary modifier only: stash to quick tray
-                                    windowDelegate.stashWindow("quick");
+                                    // Primary modifier only: stash to primary tray
+                                    const primaryTray = StashState.trays[0]?.name ?? "quick";
+                                    windowDelegate.stashWindow(primaryTray);
                                     event.accepted = true;
                                 } else {
                                     // Regular left click: focus window

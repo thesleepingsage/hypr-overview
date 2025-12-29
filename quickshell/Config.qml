@@ -111,8 +111,9 @@ Singleton {
         modifierKey: "Shift",
         secondaryModifier: "Control",
         showEmptyTrays: false,
-        position: "bottom",
-        previewScale: 0.12
+        position: "bottom",              // "bottom" | "top" | "left" | "right"
+        verticalFillMode: "centered",    // "centered" | "full" (for left/right positions)
+        previewScale: 1.0               // Scale multiplier for preview size (1.0 = 120x80 base)
     })
     property bool _hy3Detected: false
     readonly property bool useHy3: layoutPlugin === "hy3" || (layoutPlugin === "auto" && _hy3Detected)
@@ -133,11 +134,9 @@ Singleton {
         padding: 40                    // Padding from screen edges
     })
 
-    // Configurable modifier keys for all interactions
+    // Configurable modifier keys for interactions
     property var modifiers: ({
-        clusterDrag: "Ctrl",           // Modifier for dragging clusters
-        stashWindow: "Shift",          // Modifier for stashing (existing)
-        stashSecondary: "Ctrl+Shift"   // Modifier for secondary tray (existing)
+        clusterDrag: "Ctrl"            // Modifier for dragging clusters
     })
 
     // Helper to map modifier names to Qt flags
@@ -180,6 +179,7 @@ Singleton {
     function _saveConfig() {
         // Build complete config from current state (preserves all settings)
         const config = {
+            "$schema": "./config.schema.json",
             overview: {
                 rows: root.rows,
                 columns: root.columns,
@@ -196,6 +196,7 @@ Singleton {
                 animationDuration: root.animationDuration
             },
             iconMappings: root.iconMappings,
+            stashTrays: root.stashTrays,
             defaultMode: root.defaultMode,
             modeChosen: root.modeChosen,
             boardMode: root.boardMode,
@@ -273,11 +274,10 @@ Singleton {
 
             if (config.boardMode) {
                 let boardConfig = root.boardMode
-                if (config.boardMode.clusterWidth !== undefined) boardConfig.clusterWidth = config.boardMode.clusterWidth
-                if (config.boardMode.clusterHeight !== undefined) boardConfig.clusterHeight = config.boardMode.clusterHeight
+                if (config.boardMode.scale !== undefined) boardConfig.scale = config.boardMode.scale
+                if (config.boardMode.minClusterSize !== undefined) boardConfig.minClusterSize = config.boardMode.minClusterSize
+                if (config.boardMode.maxClusterSize !== undefined) boardConfig.maxClusterSize = config.boardMode.maxClusterSize
                 if (config.boardMode.clusterSpacing !== undefined) boardConfig.clusterSpacing = config.boardMode.clusterSpacing
-                if (config.boardMode.cascadeOffsetX !== undefined) boardConfig.cascadeOffsetX = config.boardMode.cascadeOffsetX
-                if (config.boardMode.cascadeOffsetY !== undefined) boardConfig.cascadeOffsetY = config.boardMode.cascadeOffsetY
                 if (config.boardMode.showEmptyWorkspaces !== undefined) boardConfig.showEmptyWorkspaces = config.boardMode.showEmptyWorkspaces
                 if (config.boardMode.padding !== undefined) boardConfig.padding = config.boardMode.padding
                 root.boardMode = boardConfig
@@ -286,9 +286,6 @@ Singleton {
             if (config.modifiers) {
                 let modConfig = root.modifiers
                 if (config.modifiers.clusterDrag !== undefined) modConfig.clusterDrag = config.modifiers.clusterDrag
-                if (config.modifiers.fanReveal !== undefined) modConfig.fanReveal = config.modifiers.fanReveal
-                if (config.modifiers.stashWindow !== undefined) modConfig.stashWindow = config.modifiers.stashWindow
-                if (config.modifiers.stashSecondary !== undefined) modConfig.stashSecondary = config.modifiers.stashSecondary
                 root.modifiers = modConfig
             }
 
