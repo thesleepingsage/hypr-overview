@@ -412,6 +412,19 @@ Item {
                         }
 
                         onReleased: {
+                            // PRIORITY 0: Stash drop (check first, before any other logic)
+                            if (StashState.draggingTargetStash !== "") {
+                                const trayName = StashState.draggingTargetStash;
+                                StashState.draggingTargetStash = "";
+                                windowDelegate.stashWindow(trayName);
+                                windowDelegate.pressed = false;
+                                windowDelegate.Drag.active = false;
+                                root.draggingFromWorkspace = -1;
+                                root.draggingWindowAddress = "";
+                                root.draggingTargetWindowAddress = "";
+                                return;
+                            }
+
                             // Capture drag state before reset
                             const targetWs = root.draggingTargetWorkspace;
                             const targetWindow = root.draggingTargetWindowAddress;

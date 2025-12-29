@@ -294,36 +294,21 @@ Rectangle {
         }
     }
 
-    // Drop area for stashing via drag
+    // Drop area for stashing via drag (uses onEntered/onExited pattern like workspace drops)
     DropArea {
         anchors.fill: parent
 
         onEntered: (drag) => {
             root.border.color = Qt.rgba(0.4, 0.9, 0.4, 0.9);
             root.border.width = 2;
+            StashState.draggingTargetStash = root.trayName;
         }
 
         onExited: {
             root.border.color = borderColor;
             root.border.width = 1;
-        }
-
-        onDropped: (drop) => {
-            root.border.color = borderColor;
-            root.border.width = 1;
-
-            // Get the dropped window address from the drag source
-            if (drop.source && drop.source.address) {
-                const windowData = HyprlandData.windowByAddress[drop.source.address];
-                if (windowData) {
-                    StashState.stashWindow(
-                        drop.source.address,
-                        root.trayName,
-                        windowData.workspace.id,
-                        windowData.workspace.name
-                    );
-                    console.log("[StashTray] Stashed dropped window", drop.source.address, "to", root.trayName);
-                }
+            if (StashState.draggingTargetStash === root.trayName) {
+                StashState.draggingTargetStash = "";
             }
         }
     }

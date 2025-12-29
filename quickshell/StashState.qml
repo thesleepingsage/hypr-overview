@@ -26,6 +26,9 @@ Singleton {
     property string verticalFillMode: OverviewConfig.stashTrays?.verticalFillMode ?? "centered"
     property real previewScale: OverviewConfig.stashTrays?.previewScale ?? 0.12
 
+    // Drag-drop state tracking (mirrors workspace drag pattern)
+    property string draggingTargetStash: ""  // Which tray we're hovering over during drag
+
     /**
      * Map configured modifier key string to Qt modifier flag
      * Centralized utility for consistent modifier detection across all stash UI

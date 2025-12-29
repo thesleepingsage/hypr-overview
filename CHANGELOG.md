@@ -26,6 +26,7 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ### Fixed
 
+- **Stash Drag-Drop** - Fix drag-to-stash not working by using onEntered/onExited pattern instead of onDropped
 - **Live Config Reloading** - Nested object properties (stashTrays, boardMode) now update without restart
 - **Stash Race Conditions** - Debouncing and in-flight tracking prevent duplicate operations
 - **Stash State Persistence** - Atomic file writes via temp file + rename, Base64 encoding

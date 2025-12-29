@@ -388,6 +388,23 @@ Item {
 
                         onReleased: {
                             const canvas = cluster.parent
+
+                            // PRIORITY 0: Stash drop (check first, before any other logic)
+                            if (StashState.draggingTargetStash !== "") {
+                                const trayName = StashState.draggingTargetStash;
+                                StashState.draggingTargetStash = "";
+                                windowDelegate.stashWindow(trayName);
+                                windowDelegate.pressed = false;
+                                windowDelegate.Drag.active = false;
+                                cluster.hasWindowDragging = false;
+                                if (canvas) {
+                                    canvas.draggingFromWorkspace = -1;
+                                    canvas.draggingWindowAddress = "";
+                                    canvas.draggingTargetWindowAddress = "";
+                                }
+                                return;
+                            }
+
                             if (!canvas) {
                                 console.log(`[Board Swap] No canvas - early return`)
                                 windowDelegate.pressed = false
