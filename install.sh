@@ -25,6 +25,7 @@ Options:
 Components installed:
   1. QML modules     → ~/.config/quickshell/hypr-overview/
   2. Default config  → ~/.config/hypr-overview/config.json
+  3. Config schema   → ~/.config/hypr-overview/config.schema.json (IDE tooltips)
 
 Generated (you copy manually):
   - keybinds.example.conf  → Copy contents to your Hyprland keybinds config
@@ -181,11 +182,16 @@ install_config() {
 
     if dry_run_preview \
         "Would create: $CONFIG_DIR" \
-        "Would copy: $SCRIPT_DIR/config/config.json → $CONFIG_DIR/config.json"; then
+        "Would copy: $SCRIPT_DIR/config/config.json → $CONFIG_DIR/config.json" \
+        "Would copy: $SCRIPT_DIR/config/config.schema.json → $CONFIG_DIR/config.schema.json"; then
         return
     fi
 
     mkdir -p "$CONFIG_DIR"
+
+    # Always install/update schema (provides IDE tooltips)
+    cp "$SCRIPT_DIR/config/config.schema.json" "$CONFIG_DIR/config.schema.json"
+    success "Config schema installed (enables IDE tooltips)"
 
     if [[ -f "$CONFIG_DIR/config.json" ]]; then
         warn "Config already exists at $CONFIG_DIR/config.json"
@@ -524,6 +530,14 @@ update() {
     else
         cp -r "$SCRIPT_DIR/quickshell/"* "$QML_INSTALL_DIR/"
         success "QML modules updated"
+    fi
+
+    # Update schema (always - provides IDE tooltips)
+    if dry_run_preview "Would update: $CONFIG_DIR/config.schema.json"; then
+        :
+    else
+        cp "$SCRIPT_DIR/config/config.schema.json" "$CONFIG_DIR/config.schema.json"
+        success "Config schema updated"
     fi
 
     # Config is preserved

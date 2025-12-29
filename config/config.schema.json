@@ -1,0 +1,328 @@
+{
+  "$schema": "./config.schema.json",
+  "$id": "https://github.com/thesleepingsage/hypr-overview/config.schema.json",
+  "title": "Hypr Overview Configuration",
+  "description": "Configuration for hypr-overview workspace overview panel for Hyprland",
+  "type": "object",
+  "properties": {
+    "overview": {
+      "type": "object",
+      "description": "Grid mode workspace layout settings",
+      "properties": {
+        "rows": {
+          "type": "integer",
+          "description": "Number of workspace rows in the grid",
+          "default": 2,
+          "minimum": 1
+        },
+        "columns": {
+          "type": "integer",
+          "description": "Number of workspace columns in the grid",
+          "default": 5,
+          "minimum": 1
+        },
+        "scale": {
+          "type": "number",
+          "description": "Window preview scale factor (0.1 = 10% of actual size)",
+          "default": 0.18,
+          "minimum": 0.05,
+          "maximum": 1.0
+        },
+        "orderRightLeft": {
+          "type": "boolean",
+          "description": "Reverse horizontal workspace order (right to left)",
+          "default": false
+        },
+        "orderBottomUp": {
+          "type": "boolean",
+          "description": "Reverse vertical workspace order (bottom to top)",
+          "default": false
+        },
+        "centerIcons": {
+          "type": "boolean",
+          "description": "Center application icons within window previews",
+          "default": true
+        },
+        "showWorkspaceNumbers": {
+          "type": "boolean",
+          "description": "Show workspace number labels on each workspace",
+          "default": true
+        }
+      }
+    },
+    "appearance": {
+      "type": "object",
+      "description": "Visual appearance settings",
+      "properties": {
+        "backdropOpacity": {
+          "type": "number",
+          "description": "Background overlay opacity (0 = transparent, 1 = opaque)",
+          "default": 0.7,
+          "minimum": 0,
+          "maximum": 1
+        },
+        "windowCornerRadius": {
+          "type": "integer",
+          "description": "Corner radius for window previews in pixels",
+          "default": 8,
+          "minimum": 0
+        },
+        "activeWorkspaceBorderWidth": {
+          "type": "integer",
+          "description": "Border width for active workspace indicator in pixels",
+          "default": 2,
+          "minimum": 0
+        },
+        "animationDuration": {
+          "type": "integer",
+          "description": "Animation duration in milliseconds",
+          "default": 200,
+          "minimum": 0
+        },
+        "colors": {
+          "type": "object",
+          "description": "Custom color overrides (only used if matugen.json not present)",
+          "properties": {
+            "backgroundColor": {
+              "type": "string",
+              "description": "Background color (hex format: #RRGGBB)",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "workspaceColor": {
+              "type": "string",
+              "description": "Workspace background color",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "workspaceHoverColor": {
+              "type": "string",
+              "description": "Workspace hover color",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "activeBorderColor": {
+              "type": "string",
+              "description": "Active workspace border color",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "workspaceNumberColor": {
+              "type": "string",
+              "description": "Workspace number label color",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            }
+          }
+        }
+      }
+    },
+    "iconMappings": {
+      "type": "object",
+      "description": "Custom window class to icon name mappings for apps with mismatched icons",
+      "additionalProperties": {
+        "type": "string",
+        "description": "Icon name to use for this window class"
+      },
+      "examples": [
+        {
+          "net-runelite-client-RuneLite": "runelite"
+        },
+        {
+          "steam_app_12345": "steam"
+        }
+      ]
+    },
+    "layoutPlugin": {
+      "type": "string",
+      "description": "Layout plugin detection mode",
+      "enum": [
+        "auto",
+        "hy3",
+        "default"
+      ],
+      "default": "auto",
+      "enumDescriptions": [
+        "Auto-detect hy3 plugin at runtime",
+        "Force hy3 layout mode",
+        "Force vanilla Hyprland layout"
+      ]
+    },
+    "stashTrays": {
+      "type": "object",
+      "description": "Stash tray configuration for temporarily hiding windows",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable the stash tray feature",
+          "default": true
+        },
+        "trays": {
+          "type": "array",
+          "description": "Stash tray definitions. First tray is primary (Shift+Click), second is secondary (Shift+Ctrl+Click)",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "label"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Internal tray identifier (used in state storage)"
+              },
+              "label": {
+                "type": "string",
+                "description": "Display label shown in the UI"
+              }
+            }
+          },
+          "default": [
+            {
+              "name": "quick",
+              "label": "Quick Stash"
+            },
+            {
+              "name": "later",
+              "label": "For Later"
+            }
+          ]
+        },
+        "modifierKey": {
+          "type": "string",
+          "description": "Primary modifier key for stashing windows",
+          "enum": [
+            "Shift",
+            "Control",
+            "Ctrl",
+            "Alt",
+            "Super",
+            "Meta"
+          ],
+          "default": "Shift"
+        },
+        "secondaryModifier": {
+          "type": "string",
+          "description": "Additional modifier for secondary tray (combined with primary)",
+          "enum": [
+            "Shift",
+            "Control",
+            "Ctrl",
+            "Alt",
+            "Super",
+            "Meta"
+          ],
+          "default": "Control"
+        },
+        "showEmptyTrays": {
+          "type": "boolean",
+          "description": "Show stash trays even when they contain no windows",
+          "default": false
+        },
+        "position": {
+          "type": "string",
+          "description": "Screen edge position for the stash tray",
+          "enum": [
+            "bottom",
+            "top",
+            "left",
+            "right"
+          ],
+          "default": "bottom"
+        },
+        "verticalFillMode": {
+          "type": "string",
+          "description": "Layout mode when position is left or right",
+          "enum": [
+            "centered",
+            "full"
+          ],
+          "default": "centered",
+          "enumDescriptions": [
+            "Center the tray vertically",
+            "Expand tray to fill the full height"
+          ]
+        },
+        "previewScale": {
+          "type": "number",
+          "description": "Scale multiplier for stashed window previews (1.0 = 120x80 base size)",
+          "default": 1.0,
+          "minimum": 0.5,
+          "maximum": 3.0
+        }
+      }
+    },
+    "defaultMode": {
+      "type": "string",
+      "description": "Default overview mode to use",
+      "enum": [
+        "grid",
+        "board"
+      ],
+      "default": "grid",
+      "enumDescriptions": [
+        "Grid mode: Fixed grid layout like GNOME/macOS",
+        "Board mode: Free-form draggable workspace clusters"
+      ]
+    },
+    "modeChosen": {
+      "type": "boolean",
+      "description": "Whether the user has made their initial mode choice (hides first-run dialog)",
+      "default": false
+    },
+    "boardMode": {
+      "type": "object",
+      "description": "Board mode (free-form cluster) settings",
+      "properties": {
+        "scale": {
+          "type": "number",
+          "description": "Base scale factor for workspace clusters",
+          "default": 0.20,
+          "minimum": 0.1,
+          "maximum": 0.5
+        },
+        "minClusterSize": {
+          "type": "integer",
+          "description": "Minimum cluster dimension in pixels",
+          "default": 150,
+          "minimum": 50
+        },
+        "maxClusterSize": {
+          "type": "integer",
+          "description": "Maximum cluster dimension in pixels",
+          "default": 600,
+          "minimum": 200
+        },
+        "clusterSpacing": {
+          "type": "integer",
+          "description": "Spacing between clusters in auto-layout mode (pixels)",
+          "default": 30,
+          "minimum": 0
+        },
+        "showEmptyWorkspaces": {
+          "type": "boolean",
+          "description": "Show clusters for workspaces with no windows",
+          "default": true
+        },
+        "padding": {
+          "type": "integer",
+          "description": "Padding from screen edges in pixels",
+          "default": 40,
+          "minimum": 0
+        }
+      }
+    },
+    "modifiers": {
+      "type": "object",
+      "description": "Modifier key bindings for various actions",
+      "properties": {
+        "clusterDrag": {
+          "type": "string",
+          "description": "Modifier key to enable cluster dragging in board mode",
+          "enum": [
+            "Ctrl",
+            "Alt",
+            "Shift",
+            "Super"
+          ],
+          "default": "Ctrl"
+        }
+      }
+    }
+  }
+}
