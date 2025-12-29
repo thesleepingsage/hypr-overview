@@ -23,6 +23,7 @@ Singleton {
     property string secondaryModifier: OverviewConfig.stashTrays?.secondaryModifier ?? "Control"
     property bool showEmptyTrays: OverviewConfig.stashTrays?.showEmptyTrays ?? false
     property string position: OverviewConfig.stashTrays?.position ?? "bottom"
+    property string verticalFillMode: OverviewConfig.stashTrays?.verticalFillMode ?? "centered"
     property real previewScale: OverviewConfig.stashTrays?.previewScale ?? 0.12
 
     /**
@@ -86,6 +87,18 @@ Singleton {
     signal windowUnstashed(string address)
     signal stateChanged()
 
+    // In-flight operation tracking to prevent race conditions
+    property var _inFlightStash: ({})     // addresses being stashed
+    property var _inFlightUnstash: ({})   // addresses being unstashed
+    property var _lastOperationTime: ({}) // debounce tracking per address
+    readonly property int operationDebounceMs: 100
+
+    // Pending address tracking for Process callbacks
+    property string _pendingStashAddress: ""
+    property string _pendingStashTray: ""
+    property string _pendingUnstashAddress: ""
+    property string _pendingUnstashOriginWs: ""
+
     // Debounce timer for state file writes
     property bool _saveQueued: false
 
@@ -101,9 +114,27 @@ Singleton {
 
     /**
      * Stash a single window to a tray
+     * Includes debouncing and in-flight tracking to prevent race conditions
      */
     function stashWindow(address: string, trayName: string, originWorkspace: int, originWorkspaceName: string): void {
         if (!enabled) return;
+
+        // GUARD 1: Check debounce (rapid clicks)
+        const now = Date.now();
+        if (_lastOperationTime[address] && (now - _lastOperationTime[address]) < operationDebounceMs) {
+            console.log("[StashState] Debounced stash request for:", address);
+            return;
+        }
+
+        // GUARD 2: Check in-flight operations
+        if (_inFlightStash[address]) {
+            console.log("[StashState] Already stashing:", address);
+            return;
+        }
+        if (_inFlightUnstash[address]) {
+            console.log("[StashState] Cannot stash - unstash in progress:", address);
+            return;
+        }
 
         const trayKey = trayName || "quick";
         const specialWs = `special:stash-${trayKey}`;
@@ -112,18 +143,24 @@ Singleton {
         let newState = JSON.parse(JSON.stringify(stashedWindows));
         if (!newState[trayKey]) newState[trayKey] = [];
 
-        // Check if already stashed
+        // GUARD 3: Check if already stashed (existing check)
         const existing = newState[trayKey].find(w => w.address === address);
         if (existing) {
             console.log("[StashState] Window already stashed:", address);
             return;
         }
 
+        // Mark in-flight BEFORE state update (critical ordering)
+        _inFlightStash[address] = true;
+        _lastOperationTime[address] = now;
+        _pendingStashAddress = address;
+        _pendingStashTray = trayKey;
+
         newState[trayKey].push({
             address: address,
             originWorkspace: originWorkspace,
             originWorkspaceName: originWorkspaceName || String(originWorkspace),
-            stashedAt: Date.now()
+            stashedAt: now
         });
 
         stashedWindows = newState;
@@ -141,8 +178,26 @@ Singleton {
 
     /**
      * Unstash a window back to its origin workspace
+     * Includes debouncing and in-flight tracking to prevent race conditions
      */
     function unstashWindow(address: string, focusAfter: bool): void {
+        // GUARD 1: Check debounce (rapid clicks)
+        const now = Date.now();
+        if (_lastOperationTime[address] && (now - _lastOperationTime[address]) < operationDebounceMs) {
+            console.log("[StashState] Debounced unstash request for:", address);
+            return;
+        }
+
+        // GUARD 2: Check in-flight operations
+        if (_inFlightUnstash[address]) {
+            console.log("[StashState] Already unstashing:", address);
+            return;
+        }
+        if (_inFlightStash[address]) {
+            console.log("[StashState] Cannot unstash - stash in progress:", address);
+            return;
+        }
+
         let windowData = null;
         let foundTray = null;
 
@@ -162,20 +217,33 @@ Singleton {
             return;
         }
 
-        // Update state - remove from stash
-        let newState = JSON.parse(JSON.stringify(stashedWindows));
-        newState[foundTray] = newState[foundTray].filter(w => w.address !== address);
-        stashedWindows = newState;
+        // Mark in-flight BEFORE state update
+        _inFlightUnstash[address] = true;
+        _lastOperationTime[address] = now;
+        _pendingUnstashAddress = address;
 
         // Determine target workspace
         const targetWs = windowData.originWorkspaceName.startsWith("special:")
             ? windowData.originWorkspaceName
             : windowData.originWorkspace;
+        _pendingUnstashOriginWs = String(targetWs);
+
+        // Store window data for potential rollback
+        const savedWindowData = JSON.parse(JSON.stringify(windowData));
+        const savedTray = foundTray;
+
+        // Update state - remove from stash
+        let newState = JSON.parse(JSON.stringify(stashedWindows));
+        newState[foundTray] = newState[foundTray].filter(w => w.address !== address);
+        stashedWindows = newState;
 
         // Execute hyprctl command
         const dispatchCmd = focusAfter ? "movetoworkspace" : "movetoworkspacesilent";
         _unstashCommand.command = ["hyprctl", "dispatch", dispatchCmd, `${targetWs},address:${address}`];
         _unstashCommand.running = true;
+
+        // Store rollback data on the Process for potential failure recovery
+        _unstashCommand.rollbackData = { windowData: savedWindowData, tray: savedTray };
 
         console.log("[StashState] Unstashing window", address, "to workspace", targetWs);
 
@@ -333,7 +401,7 @@ Singleton {
     }
 
     /**
-     * Actually write state to file
+     * Actually write state to file (atomic: temp file + rename)
      */
     function _doSaveState(): void {
         const stateData = {
@@ -341,9 +409,24 @@ Singleton {
             trays: stashedWindows
         };
 
-        // Write compact JSON (no pretty printing to avoid newline issues)
-        const jsonStr = JSON.stringify(stateData);
-        _saveProcess.command = ["bash", "-c", `echo '${jsonStr}' > '${stateFilePath}'`];
+        let jsonStr;
+        try {
+            jsonStr = JSON.stringify(stateData);
+            // Validate by parsing back (ensures no corruption)
+            JSON.parse(jsonStr);
+        } catch (e) {
+            console.error("[StashState] Failed to serialize state:", e);
+            return;
+        }
+
+        // Base64 encode to avoid shell escaping issues, atomic write via temp+rename
+        const tempPath = stateFilePath + ".tmp";
+        const b64 = Qt.btoa(jsonStr);
+
+        _saveProcess.command = [
+            "bash", "-c",
+            `echo '${b64}' | base64 -d > '${tempPath}' && mv '${tempPath}' '${stateFilePath}'`
+        ];
         _saveProcess.running = true;
     }
 
@@ -389,8 +472,25 @@ Singleton {
     Process {
         id: _stashCommand
         onExited: (exitCode, exitStatus) => {
-            if (exitCode !== 0) {
-                console.error("[StashState] Stash command failed:", exitCode);
+            if (root._pendingStashAddress) {
+                // Clear in-flight tracking
+                delete root._inFlightStash[root._pendingStashAddress];
+
+                if (exitCode !== 0) {
+                    console.error("[StashState] Stash command failed:", exitCode);
+                    // Rollback state on failure
+                    let rollbackState = JSON.parse(JSON.stringify(root.stashedWindows));
+                    if (rollbackState[root._pendingStashTray]) {
+                        rollbackState[root._pendingStashTray] = rollbackState[root._pendingStashTray].filter(
+                            w => w.address !== root._pendingStashAddress
+                        );
+                        root.stashedWindows = rollbackState;
+                        root.saveState();
+                        root.stateChanged();
+                    }
+                }
+                root._pendingStashAddress = "";
+                root._pendingStashTray = "";
             }
         }
     }
@@ -398,9 +498,29 @@ Singleton {
     // Process for single window unstash
     Process {
         id: _unstashCommand
+        property var rollbackData: null
+
         onExited: (exitCode, exitStatus) => {
-            if (exitCode !== 0) {
-                console.error("[StashState] Unstash command failed:", exitCode);
+            if (root._pendingUnstashAddress) {
+                // Clear in-flight tracking
+                delete root._inFlightUnstash[root._pendingUnstashAddress];
+
+                if (exitCode !== 0) {
+                    console.error("[StashState] Unstash command failed:", exitCode);
+                    // Rollback state on failure - re-add to stash
+                    if (_unstashCommand.rollbackData) {
+                        let rollbackState = JSON.parse(JSON.stringify(root.stashedWindows));
+                        const tray = _unstashCommand.rollbackData.tray;
+                        if (!rollbackState[tray]) rollbackState[tray] = [];
+                        rollbackState[tray].push(_unstashCommand.rollbackData.windowData);
+                        root.stashedWindows = rollbackState;
+                        root.saveState();
+                        root.stateChanged();
+                    }
+                }
+                root._pendingUnstashAddress = "";
+                root._pendingUnstashOriginWs = "";
+                _unstashCommand.rollbackData = null;
             }
         }
     }
