@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
+import "." as Local
 
 Item {
     id: boardCanvas

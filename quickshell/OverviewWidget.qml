@@ -351,6 +351,9 @@ Item {
                     scale: root.scale
                     widgetMonitor: root.monitorData
 
+                    // Corner mask color (matches workspace background)
+                    containerColor: root.workspaceColor
+
                     // Workspace position offset
                     property int wsColIndex: getWsColumn(winData?.workspace?.id ?? 1)
                     property int wsRowIndex: getWsRow(winData?.workspace?.id ?? 1)
