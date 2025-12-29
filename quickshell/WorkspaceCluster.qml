@@ -62,7 +62,11 @@ Item {
     // Computed header text for display
     readonly property string headerDisplayText: {
         const id = workspaceId
-        const name = workspaceData?.name ?? ""
+        // Strip surrounding quotes from workspace name (Hyprland includes literal quotes)
+        let name = workspaceData?.name ?? ""
+        if (name.startsWith('"') && name.endsWith('"')) {
+            name = name.slice(1, -1)
+        }
         const hasCustomName = name !== "" && name !== String(id)
         return hasCustomName ? `${id} - ${name}` : String(id)
     }
@@ -344,8 +348,11 @@ Item {
                         onExited: windowDelegate.hovered = false
 
                         onPressed: (mouse) => {
-                            // If cluster drag modifier is pressed, reject event so clusterDragArea handles it
-                            if (OverviewConfig.isModifierActive("clusterDrag", mouse.modifiers)) {
+                            // If cluster drag modifier is pressed (without stash modifier), reject for cluster drag
+                            // But if stash modifier is also held, keep the event for stash operations
+                            const isClusterDrag = OverviewConfig.isModifierActive("clusterDrag", mouse.modifiers)
+                            const isStashOp = StashState.isModifierHeld(mouse.modifiers)
+                            if (isClusterDrag && !isStashOp) {
                                 mouse.accepted = false
                                 return
                             }
@@ -424,8 +431,26 @@ Item {
                                 console.log(`[Board Swap] Condition 1,2 FAIL: targetWindow="${targetWindow}" isFloating=${isFloating}`)
                             }
 
-                            // PRIORITY 2: Tiled window cross-workspace move
-                            if (!isFloating && targetWs !== -1 && targetWs !== currentWs) {
+                            // PRIORITY 2: Floating window actions (cross-ws move OR same-ws reposition)
+                            if (isFloating) {
+                                // Calculate cluster-relative position (remove container padding)
+                                const clusterRelX = windowDelegate.x - cluster.containerPadding
+                                const clusterRelY = windowDelegate.y - cluster.containerPadding
+                                canvas.handleFloatingWindowAction(
+                                    windowAddress,
+                                    clusterRelX,
+                                    clusterRelY,
+                                    windowDelegate.windowData,
+                                    cluster.clusterMonitorData,
+                                    targetWs,
+                                    currentWs,
+                                    () => snapBackTimer.restart()
+                                )
+                                return
+                            }
+
+                            // PRIORITY 3: Tiled window cross-workspace move
+                            if (targetWs !== -1 && targetWs !== currentWs) {
                                 canvas.handleWindowMove(windowAddress, targetWs, currentWs, () => snapBackTimer.restart())
                                 return
                             }
@@ -434,15 +459,37 @@ Item {
                             snapBackTimer.restart()
                         }
 
-                        onClicked: {
+                        onClicked: (event) => {
                             // Only handle click if not dragging
-                            if (windowDelegate.Drag.active) return
+                            if (windowDelegate.Drag.active) return;
+                            if (!windowDelegate.windowData) return;
 
-                            const address = windowDelegate.windowData?.address
-                            if (address) {
-                                Hyprland.dispatch(`focuswindow address:${address}`)
+                            if (event.button === Qt.MiddleButton) {
+                                // Middle click: close window
+                                Hyprland.dispatch(`closewindow address:${windowDelegate.windowData.address}`);
+                                event.accepted = true;
+                            } else if (event.button === Qt.LeftButton) {
+                                // Check modifiers for stash operations (mirrors Grid Mode)
+                                const primaryHeld = StashState.isModifierHeld(event.modifiers);
+                                const secondaryHeld = StashState.isSecondaryModifierHeld(event.modifiers);
+
+                                if (primaryHeld && secondaryHeld) {
+                                    // Primary+Secondary modifier: stash to secondary tray
+                                    const secondaryTray = StashState.trays[1]?.name ?? "later";
+                                    windowDelegate.stashWindow(secondaryTray);
+                                    event.accepted = true;
+                                } else if (primaryHeld) {
+                                    // Primary modifier only: stash to primary tray
+                                    const primaryTray = StashState.trays[0]?.name ?? "quick";
+                                    windowDelegate.stashWindow(primaryTray);
+                                    event.accepted = true;
+                                } else {
+                                    // Regular left click: focus window and close overview
+                                    OverviewState.close();
+                                    Hyprland.dispatch(`focuswindow address:${windowDelegate.windowData.address}`);
+                                    event.accepted = true;
+                                }
                             }
-                            OverviewState.close()
                         }
                     }
                 }
@@ -457,14 +504,33 @@ Item {
             z: -1  // BEHIND windowSpace so windows receive events first
             drag.target: null  // Set dynamically when handling cluster drag
 
+            // Compute drag bounds based on reserved space (Gandalf enforcement)
+            readonly property real minX: ClusterPositionState.reservedEdge === "left" ? ClusterPositionState.reservedSize : 0
+            readonly property real minY: ClusterPositionState.reservedEdge === "top" ? ClusterPositionState.reservedSize : 0
+            readonly property real maxX: ClusterPositionState.reservedEdge === "right"
+                ? cluster.canvasWidth - ClusterPositionState.reservedSize - cluster.width
+                : cluster.canvasWidth - cluster.width
+            readonly property real maxY: ClusterPositionState.reservedEdge === "bottom"
+                ? cluster.canvasHeight - ClusterPositionState.reservedSize - cluster.height
+                : cluster.canvasHeight - cluster.height
+
             onPressed: (mouse) => {
                 // Only reaches here if window MouseArea rejected the event (modifier pressed)
                 clusterDragArea.drag.target = cluster
                 cluster.isDragging = true
             }
 
+            onPositionChanged: {
+                // Real-time clamping during drag (Gandalf: "You shall not pass!")
+                if (cluster.isDragging) {
+                    cluster.x = Math.max(minX, Math.min(maxX, cluster.x))
+                    cluster.y = Math.max(minY, Math.min(maxY, cluster.y))
+                }
+            }
+
             onReleased: {
                 if (cluster.isDragging) {
+                    // Final position is already clamped from onPositionChanged
                     ClusterPositionState.setPosition(workspaceId, cluster.x, cluster.y, cluster.canvasWidth, cluster.canvasHeight)
                     cluster.isDragging = false
                     clusterDragArea.drag.target = null

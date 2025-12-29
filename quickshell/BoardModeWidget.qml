@@ -90,6 +90,51 @@ Item {
         return true
     }
 
+    // ========== FLOATING WINDOW REPOSITION (mirrors Grid Mode OverviewWidget.qml:154-173) ==========
+    function handleFloatingWindowAction(windowAddress, clusterRelX, clusterRelY, windowData, clusterMonitorData, targetWs, sourceWs, snapBackCallback) {
+        if (targetWs !== -1 && targetWs !== sourceWs) {
+            // Cross-workspace move
+            console.log(`[Board] FLOAT MOVE: ws ${sourceWs} -> ${targetWs}`)
+            Hyprland.dispatch(`movetoworkspacesilent ${targetWs}, address:${windowAddress}`)
+
+            function onFloatMoveDataUpdated() {
+                HyprlandData.windowListUpdated.disconnect(onFloatMoveDataUpdated)
+                if (snapBackCallback) snapBackCallback()
+            }
+            HyprlandData.windowListUpdated.connect(onFloatMoveDataUpdated)
+            HyprlandData.updateWindowList()
+            return true
+        }
+
+        // Same-workspace reposition - convert cluster-relative to absolute monitor coords
+        const scale = OverviewConfig.scale
+
+        // Get window's actual monitor (floating windows may be on different monitor than cluster)
+        const winMonitorId = windowData?.monitor ?? 0
+        const monitors = HyprlandData.monitors
+        const winMonitorData = monitors.find(m => m.id === winMonitorId) ?? clusterMonitorData
+
+        // Calculate width/height ratio (cluster monitor vs window's monitor)
+        const widthRatio = (clusterMonitorData?.width ?? 1920) / (winMonitorData?.width ?? 1920)
+        const heightRatio = (clusterMonitorData?.height ?? 1080) / (winMonitorData?.height ?? 1080)
+
+        // Reverse the transform: cluster-relative -> monitor-relative
+        const posOnMonitorX = clusterRelX / (widthRatio * scale)
+        const posOnMonitorY = clusterRelY / (heightRatio * scale)
+
+        // Convert to absolute screen coordinates
+        const monitorX = winMonitorData?.x ?? 0
+        const monitorY = winMonitorData?.y ?? 0
+        const absoluteX = Math.round(monitorX + posOnMonitorX)
+        const absoluteY = Math.round(monitorY + posOnMonitorY)
+
+        console.log(`[Board] FLOAT REPOSITION: (${absoluteX}, ${absoluteY})`)
+        Hyprland.dispatch(`movewindowpixel exact ${absoluteX} ${absoluteY}, address:${windowAddress}`)
+
+        if (snapBackCallback) snapBackCallback()
+        return true
+    }
+
     // Background
     Rectangle {
         anchors.fill: parent
@@ -127,12 +172,32 @@ Item {
         }
     }
 
-    // Stash trays (shared with Grid Mode)
+    // Stash trays with position-aware anchoring
     StashTrayContainer {
-        anchors.bottom: parent.bottom
-        anchors.horizontalCenter: parent.horizontalCenter
+        id: stashTrayContainer
         monitorData: boardCanvas.monitorData
         widgetMonitor: boardCanvas.monitorData
+
+        // Position-aware anchoring based on StashState.position
+        anchors.top: StashState.position === "top" ? parent.top : undefined
+        anchors.bottom: StashState.position === "bottom" ? parent.bottom :
+            (stashTrayContainer.isVerticalLayout && StashState.verticalFillMode === "full") ? parent.bottom : undefined
+        anchors.left: StashState.position === "left" ? parent.left : undefined
+        anchors.right: StashState.position === "right" ? parent.right : undefined
+        anchors.horizontalCenter: !stashTrayContainer.isVerticalLayout ? parent.horizontalCenter : undefined
+        anchors.verticalCenter: stashTrayContainer.isVerticalLayout && StashState.verticalFillMode === "centered" ? parent.verticalCenter : undefined
+    }
+
+    // Sync reserved space to ClusterPositionState for Gandalf enforcement
+    Binding {
+        target: ClusterPositionState
+        property: "reservedEdge"
+        value: stashTrayContainer.shouldShow ? StashState.position : "none"
+    }
+    Binding {
+        target: ClusterPositionState
+        property: "reservedSize"
+        value: stashTrayContainer.shouldShow ? stashTrayContainer.reservedSpace : 0
     }
 
     // Keyboard shortcuts
