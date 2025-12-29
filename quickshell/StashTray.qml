@@ -28,6 +28,14 @@ Rectangle {
     property bool isEmpty: windowCount === 0
     property bool collapsed: isEmpty && !StashState.showEmptyTrays
 
+    // Helper to strip surrounding quotes from workspace names (Hyprland includes literal quotes)
+    function stripQuotes(str) {
+        if (str && str.startsWith('"') && str.endsWith('"')) {
+            return str.slice(1, -1)
+        }
+        return str
+    }
+
     // Group windows by origin workspace
     property var windowsByWorkspace: {
         const groups = {};
@@ -36,7 +44,7 @@ Rectangle {
             if (!groups[wsKey]) {
                 groups[wsKey] = {
                     id: win.originWorkspace,
-                    name: win.originWorkspaceName || String(win.originWorkspace),
+                    name: root.stripQuotes(win.originWorkspaceName) || String(win.originWorkspace),
                     windows: []
                 };
             }
@@ -46,10 +54,11 @@ Rectangle {
         return Object.values(groups).sort((a, b) => a.id - b.id);
     }
 
-    // Visual properties
-    property real trayHeight: 100
-    property real windowPreviewWidth: 120
-    property real windowPreviewHeight: 80
+    // Visual properties - base dimensions scaled by previewScale
+    property real basePreviewWidth: 120
+    property real basePreviewHeight: 80
+    property real windowPreviewWidth: basePreviewWidth * previewScale
+    property real windowPreviewHeight: basePreviewHeight * previewScale
     property real trayPadding: 8
     property real cornerRadius: 12
 
@@ -62,7 +71,7 @@ Rectangle {
     // Size
     visible: !collapsed
     implicitWidth: collapsed ? 0 : Math.max(200, contentRow.implicitWidth + trayPadding * 2)
-    implicitHeight: collapsed ? 0 : trayHeight + trayPadding * 2
+    implicitHeight: collapsed ? 0 : windowPreviewHeight + trayPadding * 2
 
     // Appearance
     color: backgroundColor
@@ -122,7 +131,8 @@ Rectangle {
         Rectangle {
             Layout.preferredWidth: 1
             Layout.fillHeight: true
-            Layout.margins: 4
+            Layout.topMargin: 8
+            Layout.bottomMargin: 8
             color: borderColor
             visible: root.windowCount > 0
         }
@@ -132,6 +142,7 @@ Rectangle {
             id: windowsRow
             Layout.fillWidth: true
             Layout.fillHeight: true
+            Layout.alignment: Qt.AlignVCenter
             spacing: 12
 
             Repeater {
@@ -144,7 +155,7 @@ Rectangle {
 
                     spacing: 4
 
-                    // Workspace label
+                    // Workspace label (rotated CCW for vertical text)
                     Rectangle {
                         width: 20
                         height: root.windowPreviewHeight
@@ -153,10 +164,14 @@ Rectangle {
 
                         Text {
                             anchors.centerIn: parent
+                            rotation: -90
+                            width: parent.height - 8
                             text: workspaceGroup.modelData.name
                             color: Qt.rgba(1, 1, 1, 0.8)
-                            font.pixelSize: 12
+                            font.pixelSize: 11
                             font.bold: true
+                            elide: Text.ElideRight
+                            horizontalAlignment: Text.AlignHCenter
                         }
                     }
 
