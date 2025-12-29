@@ -250,15 +250,16 @@ Singleton {
             // Layout plugin override
             if (config.layoutPlugin !== undefined) root.layoutPlugin = config.layoutPlugin
 
-            // Stash tray settings
+            // Stash tray settings (shallow copy ensures binding updates trigger)
             if (config.stashTrays) {
-                let stashConfig = root.stashTrays;
+                let stashConfig = Object.assign({}, root.stashTrays)
                 if (config.stashTrays.enabled !== undefined) stashConfig.enabled = config.stashTrays.enabled
                 if (config.stashTrays.trays !== undefined) stashConfig.trays = config.stashTrays.trays
                 if (config.stashTrays.modifierKey !== undefined) stashConfig.modifierKey = config.stashTrays.modifierKey
                 if (config.stashTrays.secondaryModifier !== undefined) stashConfig.secondaryModifier = config.stashTrays.secondaryModifier
                 if (config.stashTrays.showEmptyTrays !== undefined) stashConfig.showEmptyTrays = config.stashTrays.showEmptyTrays
                 if (config.stashTrays.position !== undefined) stashConfig.position = config.stashTrays.position
+                if (config.stashTrays.verticalFillMode !== undefined) stashConfig.verticalFillMode = config.stashTrays.verticalFillMode
                 if (config.stashTrays.previewScale !== undefined) stashConfig.previewScale = config.stashTrays.previewScale
                 root.stashTrays = stashConfig
             }
@@ -268,12 +269,13 @@ Singleton {
                 root.iconMappings = config.iconMappings
             }
 
-            // Board mode settings (v2)
+            // Mode selection
             if (config.defaultMode !== undefined) root.defaultMode = config.defaultMode
             if (config.modeChosen !== undefined) root.modeChosen = config.modeChosen
 
+            // Board mode settings (shallow copy ensures binding updates trigger)
             if (config.boardMode) {
-                let boardConfig = root.boardMode
+                let boardConfig = Object.assign({}, root.boardMode)
                 if (config.boardMode.scale !== undefined) boardConfig.scale = config.boardMode.scale
                 if (config.boardMode.minClusterSize !== undefined) boardConfig.minClusterSize = config.boardMode.minClusterSize
                 if (config.boardMode.maxClusterSize !== undefined) boardConfig.maxClusterSize = config.boardMode.maxClusterSize
@@ -283,8 +285,9 @@ Singleton {
                 root.boardMode = boardConfig
             }
 
+            // Modifier keys (shallow copy ensures binding updates trigger)
             if (config.modifiers) {
-                let modConfig = root.modifiers
+                let modConfig = Object.assign({}, root.modifiers)
                 if (config.modifiers.clusterDrag !== undefined) modConfig.clusterDrag = config.modifiers.clusterDrag
                 root.modifiers = modConfig
             }
