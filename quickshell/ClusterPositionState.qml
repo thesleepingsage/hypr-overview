@@ -11,6 +11,10 @@ Singleton {
     // Reactive workspace count for auto-layout calculations
     property int workspaceCount: HyprlandData.workspaces.length
 
+    // Reserved space for stash tray (set by BoardModeWidget)
+    property string reservedEdge: "none"   // "none" | "top" | "bottom" | "left" | "right"
+    property real reservedSize: 0          // Pixels reserved for stash tray
+
     // Get position for workspace (converts percentage to pixels)
     function getPosition(workspaceId, viewWidth, viewHeight) {
         // Use defaults if view dimensions not available
@@ -26,16 +30,42 @@ Singleton {
         return calculateAutoPosition(workspaceId, vw, vh)
     }
 
-    // Save position after drag (converts pixels to percentage)
+    // Save position after drag (converts pixels to percentage, with clamping for reserved zones)
     function setPosition(workspaceId, x, y, viewWidth, viewHeight) {
         const vw = viewWidth ?? 1920
         const vh = viewHeight ?? 1080
 
+        // Clamp position to avoid reserved zone (Gandalf enforcement)
+        let clampedX = x
+        let clampedY = y
+
+        // Get cluster size for bounds checking
+        const clusterSize = calculateClusterSize(vw, vh)
+
+        switch (reservedEdge) {
+            case "top":
+                clampedY = Math.max(reservedSize, clampedY)
+                break
+            case "bottom":
+                clampedY = Math.min(vh - reservedSize - clusterSize.height, clampedY)
+                break
+            case "left":
+                clampedX = Math.max(reservedSize, clampedX)
+                break
+            case "right":
+                clampedX = Math.min(vw - reservedSize - clusterSize.width, clampedX)
+                break
+        }
+
+        // Ensure non-negative
+        clampedX = Math.max(0, clampedX)
+        clampedY = Math.max(0, clampedY)
+
         // Create shallow copy to trigger binding updates
         let newPositions = Object.assign({}, positions)
         newPositions[workspaceId] = {
-            xPercent: x / vw,
-            yPercent: y / vh
+            xPercent: clampedX / vw,
+            yPercent: clampedY / vh
         }
         positions = newPositions
     }
@@ -47,8 +77,18 @@ Singleton {
 
     // Calculate cluster size based on view dimensions (resolution-independent)
     function calculateClusterSize(viewWidth, viewHeight) {
-        const vw = viewWidth ?? 1920
-        const vh = viewHeight ?? 1080
+        let vw = viewWidth ?? 1920
+        let vh = viewHeight ?? 1080
+
+        // Reduce available space based on reserved edge (clusters shouldn't grow into stash tray area)
+        switch (reservedEdge) {
+            case "top": case "bottom":
+                vh -= reservedSize
+                break
+            case "left": case "right":
+                vw -= reservedSize
+                break
+        }
 
         const baseScale = OverviewConfig.boardMode.scale ?? 0.20
         const count = Math.max(workspaceCount, 1)
@@ -65,10 +105,33 @@ Singleton {
         return { width: width, height: height }
     }
 
-    // Calculate grid-based auto-layout position (uses view dimensions)
+    // Calculate grid-based auto-layout position (uses view dimensions, respects reserved space)
     function calculateAutoPosition(workspaceId, viewWidth, viewHeight) {
         const vw = viewWidth ?? 1920
         const vh = viewHeight ?? 1080
+
+        // Calculate usable area after reserved space
+        let usableX = 0
+        let usableY = 0
+        let usableWidth = vw
+        let usableHeight = vh
+
+        switch (reservedEdge) {
+            case "top":
+                usableY = reservedSize
+                usableHeight = vh - reservedSize
+                break
+            case "bottom":
+                usableHeight = vh - reservedSize
+                break
+            case "left":
+                usableX = reservedSize
+                usableWidth = vw - reservedSize
+                break
+            case "right":
+                usableWidth = vw - reservedSize
+                break
+        }
 
         const count = Math.max(workspaceCount, 1)
         const cols = Math.ceil(Math.sqrt(count))
@@ -80,8 +143,8 @@ Singleton {
         const padding = OverviewConfig.boardMode.padding
 
         return Qt.point(
-            padding + col * (clusterSize.width + spacing),
-            padding + row * (clusterSize.height + spacing)
+            usableX + padding + col * (clusterSize.width + spacing),
+            usableY + padding + row * (clusterSize.height + spacing)
         )
     }
 }
