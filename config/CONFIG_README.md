@@ -16,7 +16,7 @@ Workspace grid layout settings.
 | `scale` | `0.18` | Window preview scale factor (0.1-0.5) |
 | `orderRightLeft` | `false` | Reverse horizontal workspace ordering |
 | `orderBottomUp` | `false` | Reverse vertical workspace ordering |
-| `centerIcons` | `true` | Center app icons on window previews |
+| `centerIcons` | `true` | Icon position: `true` = centered (35% of preview), `false` = top-left corner (15% of preview) |
 | `showWorkspaceNumbers` | `true` | Show workspace numbers in corners |
 
 **Grid presets:**
@@ -134,6 +134,49 @@ ls /usr/share/icons/hicolor/*/apps/
 
 ---
 
+## activeMode
+
+The currently selected overview mode. Persisted when switching between modes.
+
+| Value | Description |
+|-------|-------------|
+| `"grid"` | Fixed grid layout (GNOME/macOS style) |
+| `"board"` | Free-form draggable workspace clusters |
+
+---
+
+## initialSetupDone
+
+Boolean flag indicating whether the user has completed initial mode selection.
+Set to `true` after the first-run dialog is dismissed. The dialog won't appear again once this is `true`.
+
+---
+
+## boardMode
+
+Settings for Board Mode (free-form cluster layout).
+
+| Setting | Default | Range | Description |
+|---------|---------|-------|-------------|
+| `scale` | `0.20` | `0.1` - `0.5` | Workspace cluster size scale factor |
+| `minClusterSize` | `150` | `50`+ | Minimum cluster dimension in pixels |
+| `maxClusterSize` | `600` | `200`+ | Maximum cluster dimension in pixels |
+| `clusterSpacing` | `30` | `0`+ | Spacing between clusters in auto-layout |
+| `showEmptyWorkspaces` | `true` | - | Show clusters for workspaces with no windows |
+| `padding` | `40` | `0`+ | Padding from screen edges |
+
+---
+
+## modifiers
+
+Configurable modifier keys for interactions.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `clusterDrag` | `"Ctrl"` | Modifier key to enable cluster dragging in board mode |
+
+---
+
 ## layoutPlugin
 
 Layout plugin detection for window swapping.
@@ -180,10 +223,23 @@ Layout plugin detection for window swapping.
     "secondaryModifier": "Control",
     "showEmptyTrays": false,
     "position": "bottom",
-    "previewScale": 0.12
+    "previewScale": 1.0
   },
   "iconMappings": {
     "net-runelite-client-RuneLite": "runelite"
+  },
+  "activeMode": "grid",
+  "initialSetupDone": true,
+  "boardMode": {
+    "scale": 0.20,
+    "minClusterSize": 150,
+    "maxClusterSize": 600,
+    "clusterSpacing": 30,
+    "showEmptyWorkspaces": true,
+    "padding": 40
+  },
+  "modifiers": {
+    "clusterDrag": "Ctrl"
   },
   "layoutPlugin": "auto"
 }
