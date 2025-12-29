@@ -5,6 +5,33 @@ All notable changes to hypr-overview are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
+## [Unreleased]
+
+### Added
+
+- **Board Mode** - New freeform workspace layout alternative to Grid Mode
+  - Workspace clusters with folder-tab headers and picture frame styling
+  - Drag clusters anywhere on the canvas (Ctrl+drag)
+  - Resolution-independent positioning (percentage-based storage)
+  - Corner mask wedges for rounded window appearance
+  - First-run mode choice dialog (Grid vs Board)
+  - IPC mode toggle support
+- **Stash Tray Multi-Edge Positioning** - Place stash trays on any screen edge (top, bottom, left, right)
+  - Vertical layout with rotated workspace labels for left/right positions
+  - Configurable `verticalFillMode`: "centered" or "full" height
+  - Configurable `previewScale` for tray size customization
+- **Floating Window Reposition** - Drag floating windows to reposition within Board Mode clusters
+- **Cluster Drag Boundaries** - Clusters respect stash tray reserved space ("Gandalf" enforcement)
+- **Config JSON Schema** - IDE validation and tooltips via config.schema.json
+
+### Fixed
+
+- **Live Config Reloading** - Nested object properties (stashTrays, boardMode) now update without restart
+- **Stash Race Conditions** - Debouncing and in-flight tracking prevent duplicate operations
+- **Stash State Persistence** - Atomic file writes via temp file + rename, Base64 encoding
+- **Config Persistence** - All settings now saved when updating config file
+- **Window Positioning** - Board Mode window positions match Grid Mode behavior
+
 ## 0.2.1 - 2025-12-26
 
 ### Fixed
