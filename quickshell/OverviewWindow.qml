@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Shapes
 import Quickshell
 import Quickshell.Wayland
 
@@ -23,6 +24,9 @@ Item {
     // Optional properties
     property real xOffset: 0
     property real yOffset: 0
+
+    // Container color for corner masks (matches cluster background)
+    property color containerColor: OverviewConfig.workspaceColor
 
     // Cascade mode (Board Mode) - when true, position is simplified for cluster layout
     property bool cascadeMode: false
@@ -115,6 +119,52 @@ Item {
         anchors.fill: parent
         captureSource: OverviewState.isOpen ? root.toplevel : null
         live: true
+    }
+
+    // Corner masks - draw wedge shapes at each corner to create rounded appearance
+    // Visual only - does not affect input hit areas (stays rectangular for drag/click)
+    Repeater {
+        model: 4  // TL=0, TR=1, BL=2, BR=3
+
+        Shape {
+            required property int index
+            readonly property real r: root.cornerRadius
+
+            // Position at each corner
+            x: (index === 1 || index === 3) ? root.width - r : 0
+            y: (index >= 2) ? root.height - r : 0
+            width: r
+            height: r
+            z: 50  // Above window preview, below hover overlay
+
+            layer.enabled: true
+            layer.smooth: true
+
+            ShapePath {
+                fillColor: root.containerColor
+                strokeWidth: 0
+
+                // Each corner: arc curves AWAY from corner being masked
+                // All use CCW which curves toward the interior/opposite corner
+                // TL: (0,0)→(r,0)→arc to (0,r)  |  TR: (r,0)→(r,r)→arc to (0,0)
+                // BL: (0,r)→(0,0)→arc to (r,r)  |  BR: (r,r)→(0,r)→arc to (r,0)
+                startX: (index === 1 || index === 3) ? r : 0
+                startY: (index >= 2) ? r : 0
+
+                PathLine {
+                    x: (index === 0) ? r : (index === 1) ? r : (index === 2) ? 0 : 0
+                    y: (index === 0) ? 0 : (index === 1) ? r : (index === 2) ? 0 : r
+                }
+
+                PathArc {
+                    x: (index === 0) ? 0 : (index === 1) ? 0 : (index === 2) ? r : r
+                    y: (index === 0) ? r : (index === 1) ? 0 : (index === 2) ? r : 0
+                    radiusX: r
+                    radiusY: r
+                    direction: PathArc.Counterclockwise  // All corners: arc curves away from corner
+                }
+            }
+        }
     }
 
     // Overlay for hover/press states
