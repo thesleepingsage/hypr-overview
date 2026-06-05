@@ -15,7 +15,7 @@ Item {
     id: root
 
     // Required properties
-    property var toplevel           // ToplevelManager.toplevels entry
+    property var toplevel           // Hyprland.toplevels entry (HyprlandToplevel)
     property var windowData         // HyprlandData client object
     property var monitorData        // Monitor info from HyprlandData
     property real scale: 1.0        // Overview scale factor
@@ -113,11 +113,12 @@ Item {
         NumberAnimation { duration: OverviewConfig.animationDuration; easing.type: Easing.OutCubic }
     }
 
-    // Live window preview
+    // Live window preview.
+    // captureSource is the Wayland toplevel handle, exposed by HyprlandToplevel.wayland.
     ScreencopyView {
         id: windowPreview
         anchors.fill: parent
-        captureSource: OverviewState.isOpen ? root.toplevel : null
+        captureSource: OverviewState.isOpen ? root.toplevel?.wayland ?? null : null
         live: true
     }
 

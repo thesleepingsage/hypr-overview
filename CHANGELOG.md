@@ -24,8 +24,30 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 - **Cluster Drag Boundaries** - Clusters respect stash tray reserved space ("Gandalf" enforcement)
 - **Config JSON Schema** - IDE validation and tooltips via config.schema.json
 
+### Changed
+
+- **Reactive Hyprland data layer** - `HyprlandData` now derives window/workspace/monitor
+  state from Quickshell's reactive `Hyprland.toplevels` / `.workspaces` / `.monitors`
+  models (via `lastIpcObject`) instead of polling `hyprctl -j` on every event. Refreshes
+  are now targeted (`refreshToplevels`/`refreshWorkspaces`/`refreshMonitors`) per event
+  category and on overview open. The public `HyprlandData` interface is unchanged.
+- **Native toplevel previews** - Window previews use `Hyprland.toplevels` and
+  `HyprlandToplevel.wayland` directly for `ScreencopyView`, replacing the older
+  `ToplevelManager` + `HyprlandToplevel` attached-property matching.
+- **Stable window identity** - Drag/swap/move now anchor on the live `HyprlandToplevel`
+  (address + workspace) and the `stableId` field (Hyprland >= 0.54), reducing reliance on
+  position heuristics and stale polled client data for the dragged window.
+
+### Removed
+
+- **`BufferedProcess.qml`** - The reactive data layer no longer shells out to `hyprctl -j`,
+  so the buffered JSON process runner is unused and was removed.
+
 ### Fixed
 
+- **Screen-share thrash (Hyprland 0.55)** - The new `screencastv2` event is now filtered
+  out of the data-refresh path (alongside `screencast`), so active screen sharing no
+  longer triggers spurious overview data refreshes.
 - **Stash Drag-Drop** - Fix drag-to-stash not working by using onEntered/onExited pattern instead of onDropped
 - **Live Config Reloading** - Nested object properties (stashTrays, boardMode) now update without restart
 - **Stash Race Conditions** - Debouncing and in-flight tracking prevent duplicate operations

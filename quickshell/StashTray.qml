@@ -189,11 +189,8 @@ Rectangle {
 
                                 property string windowAddress: modelData.address
                                 property var windowData: HyprlandData.windowByAddress[windowAddress]
-                                property var toplevel: {
-                                    const toplevels = ToplevelManager.toplevels.values;
-                                    const addr = windowAddress.replace("0x", "");
-                                    return toplevels.find(t => t.HyprlandToplevel?.address === addr);
-                                }
+                                property var toplevel: Hyprland.toplevels.values.find(
+                                    t => HyprlandData.normalizeAddr(t.address) === windowAddress)
 
                                 width: root.windowPreviewWidth
                                 height: root.windowPreviewHeight
@@ -210,9 +207,9 @@ Rectangle {
                                 ScreencopyView {
                                     anchors.fill: parent
                                     anchors.margins: 2
-                                    captureSource: OverviewState.isOpen ? windowPreview.toplevel : null
+                                    captureSource: OverviewState.isOpen ? windowPreview.toplevel?.wayland ?? null : null
                                     live: true
-                                    visible: toplevel !== undefined
+                                    visible: windowPreview.toplevel !== undefined
                                 }
 
                                 // Fallback: app icon

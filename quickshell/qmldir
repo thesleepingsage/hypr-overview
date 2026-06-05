@@ -11,4 +11,3 @@ WorkspaceCluster 1.0 WorkspaceCluster.qml
 FirstRunChoice 1.0 FirstRunChoice.qml
 StashTray 1.0 StashTray.qml
 StashTrayContainer 1.0 StashTrayContainer.qml
-BufferedProcess 1.0 BufferedProcess.qml
