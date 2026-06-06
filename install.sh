@@ -72,6 +72,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Installation paths
 QML_INSTALL_DIR="$HOME/.config/quickshell/hypr-overview"
 CONFIG_DIR="$HOME/.config/hypr-overview"
+WRAPPER_PATH="$HOME/.local/bin/hypr-overview"
+WRAPPER_ALIAS="$HOME/.local/bin/hyo"
 
 # ==============================================================================
 # Helper Functions
@@ -232,6 +234,47 @@ EOF
     success "Created $example_file"
 }
 
+install_wrapper() {
+    info "Installing wrapper scripts"
+
+    if dry_run_preview \
+        "Would create: $WRAPPER_PATH" \
+        "Would create: $WRAPPER_ALIAS (symlink)"; then
+        return
+    fi
+
+    if command -v hypr-overview &>/dev/null; then
+        local existing=$(command -v hypr-overview)
+        if [[ "$existing" != "$WRAPPER_PATH" ]]; then
+            warn "hypr-overview command already exists at: $existing"
+            if ! ask "Overwrite with new wrapper?"; then
+                info "Skipping wrapper installation"
+                return 0
+            fi
+        fi
+    fi
+
+    mkdir -p "$(dirname "$WRAPPER_PATH")"
+
+    cat > "$WRAPPER_PATH" << 'EOF'
+#!/bin/sh
+# hypr-overview wrapper - auto-detaches for launch, sync for IPC
+
+QS_PATH="$HOME/.config/quickshell/hypr-overview"
+
+if [ "$1" = "ipc" ]; then
+    exec qs -p "$QS_PATH" "$@"
+fi
+
+setsid -f qs -p "$QS_PATH" "$@" &>/dev/null
+EOF
+    chmod +x "$WRAPPER_PATH"
+
+    ln -sf "$WRAPPER_PATH" "$WRAPPER_ALIAS"
+
+    success "Wrappers installed: hypr-overview, hyo"
+}
+
 # ==============================================================================
 # Auto-Integration Functions
 # ==============================================================================
@@ -309,6 +352,7 @@ uninstall() {
     echo ""
     echo "Components to remove:"
     echo "  - QML modules: $QML_INSTALL_DIR"
+    echo "  - Wrappers: $WRAPPER_PATH, $WRAPPER_ALIAS"
     echo ""
     echo "Optional (will ask):"
     echo "  - Config: $CONFIG_DIR"
@@ -320,6 +364,11 @@ uninstall() {
     fi
 
     remove_if_exists "$QML_INSTALL_DIR" "QML modules"
+
+    # Remove wrapper scripts
+    [[ -f "$WRAPPER_PATH" ]] && rm -f "$WRAPPER_PATH" && success "Removed: $WRAPPER_PATH"
+    [[ -L "$WRAPPER_ALIAS" ]] && rm -f "$WRAPPER_ALIAS" && success "Removed: $WRAPPER_ALIAS"
+
     remove_if_exists "$CONFIG_DIR" "config" --prompt "Remove config ($CONFIG_DIR)?"
 
     echo ""
@@ -369,10 +418,11 @@ show_next_steps() {
         echo "   killall quickshell; quickshell &"
     else
         echo -e "1. ${BOLD}Start hypr-overview (for this session):${NC}"
-        echo "   qs --path ~/.config/quickshell/hypr-overview &"
+        echo "   hypr-overview"
+        echo "   # or use the short alias: hyo"
         echo ""
         echo -e "2. ${BOLD}Add startup to your execs.conf:${NC}"
-        echo "   exec-once = qs --path ~/.config/quickshell/hypr-overview &"
+        echo "   exec-once = hypr-overview"
     fi
 
     local next_step=2
@@ -484,6 +534,7 @@ install() {
 
     # Install components
     install_qml_modules
+    install_wrapper
     install_config
 
     echo ""
@@ -545,6 +596,13 @@ update() {
         success "Config preserved (not overwritten)"
     else
         install_config
+    fi
+
+    # Install/update wrapper scripts
+    if [[ -f "$WRAPPER_PATH" ]]; then
+        success "Wrapper scripts already installed"
+    else
+        install_wrapper
     fi
 
     echo ""
