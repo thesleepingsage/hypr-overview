@@ -132,17 +132,16 @@ Item {
      * @returns true if swap was executed
      */
     function handleWindowSwap(windowDelegate, targetWindow, snapBackTimer) {
-        const swapCmd = HyprlandDispatch.swapWindows(windowDelegate.address, targetWindow);
-        console.log(`[hypr-overview] SWAP: ${swapCmd}`);
-        Hyprland.dispatch(swapCmd);
-
-        // Wait for HyprlandData to refresh, then snap to updated positions
-        function onDataUpdated() {
-            HyprlandData.windowListUpdated.disconnect(onDataUpdated);
-            snapBackTimer.restart();
-        }
-        HyprlandData.windowListUpdated.connect(onDataUpdated);
-        HyprlandData.updateWindowList();
+        // Swap preserves the cursor position (swapWith warps it onto the window).
+        HyprlandDispatch.swapWindowsPreservingCursor(windowDelegate.address, targetWindow, () => {
+            // Wait for HyprlandData to refresh, then snap to updated positions
+            function onDataUpdated() {
+                HyprlandData.windowListUpdated.disconnect(onDataUpdated);
+                snapBackTimer.restart();
+            }
+            HyprlandData.windowListUpdated.connect(onDataUpdated);
+            HyprlandData.updateWindowList();
+        });
         return true;
     }
 

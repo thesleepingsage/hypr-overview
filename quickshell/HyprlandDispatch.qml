@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Hyprland
 
 /**
@@ -69,5 +70,74 @@ Singleton {
         return Hyprland.usingLua
             ? `hl.dsp.focus({workspace="${selector}"})`
             : `workspace ${selector}`;
+    }
+
+    // Warp the cursor to absolute compositor coordinates.
+    function cursorMove(x, y) {
+        return Hyprland.usingLua
+            ? `hl.dsp.cursor.move({x=${x},y=${y}})`
+            : `movecursor ${x} ${y}`;
+    }
+
+    // Swap two windows while keeping the cursor put.
+    //
+    // Hyprland's swap action (Actions::swapWith) hardcodes a cursor warp onto the
+    // swapped window, with no per-call suppression. Cross-workspace moves are silent
+    // and don't warp, so swap feels inconsistent. To match it we save the cursor
+    // position (hyprctl cursorpos), dispatch the swap, then warp the cursor back.
+    // Socket ordering guarantees the restore lands after swapWith's warp. The swap
+    // always happens even if the read fails -- the restore is best-effort.
+    //
+    // `afterSwap` runs the caller's post-swap work (the windowListUpdated/snap-back
+    // wiring) once the swap has been dispatched.
+    property var _swapPending: null
+    property string _cursorBuf: ""
+
+    function swapWindowsPreservingCursor(srcAddr, targetAddr, afterSwap) {
+        if (root._swapPending) {
+            // A cursorpos read is already in flight (only reachable by two drag
+            // releases inside the few-ms read window -- practically impossible with
+            // one pointer). Don't clobber it; still run the caller's snap-back so the
+            // dropped delegate's preview can't be stranded mid-drag.
+            if (afterSwap)
+                afterSwap();
+            return;
+        }
+        root._swapPending = { src: srcAddr, target: targetAddr, afterSwap: afterSwap };
+        root._cursorBuf = "";
+        _cursorProc.running = true;
+    }
+
+    Process {
+        id: _cursorProc
+        command: ["hyprctl", "cursorpos"]
+        stdout: SplitParser {
+            splitMarker: ""
+            onRead: data => { root._cursorBuf += data; }
+        }
+        onExited: (exitCode, exitStatus) => {
+            const pending = root._swapPending;
+            const buf = root._cursorBuf;
+            root._swapPending = null;
+            root._cursorBuf = "";
+            if (!pending)
+                return;
+
+            // Dispatch the swap first (warps the cursor), then restore.
+            const swapCmd = root.swapWindows(pending.src, pending.target);
+            console.log(`[hypr-overview] SWAP: ${swapCmd}`);
+            Hyprland.dispatch(swapCmd);
+
+            // Parse "x, y" and warp the cursor back (best-effort).
+            if (exitCode === 0) {
+                const m = buf.match(/(-?\d+)\s*,\s*(-?\d+)/);
+                if (m) {
+                    Hyprland.dispatch(root.cursorMove(parseInt(m[1], 10), parseInt(m[2], 10)));
+                }
+            }
+
+            if (pending.afterSwap)
+                pending.afterSwap();
+        }
     }
 }
