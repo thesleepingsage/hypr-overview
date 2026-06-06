@@ -486,7 +486,7 @@ Item {
 
                             if (event.button === Qt.MiddleButton) {
                                 // Middle click: close window
-                                Hyprland.dispatch(`closewindow address:${windowDelegate.address}`);
+                                Hyprland.dispatch(HyprlandDispatch.closeWindow(windowDelegate.address));
                                 event.accepted = true;
                             } else if (event.button === Qt.LeftButton) {
                                 // Check modifiers for stash operations (mirrors Grid Mode)
@@ -506,7 +506,7 @@ Item {
                                 } else {
                                     // Regular left click: focus window and close overview
                                     OverviewState.close();
-                                    Hyprland.dispatch(`focuswindow address:${windowDelegate.address}`);
+                                    Hyprland.dispatch(HyprlandDispatch.focusWindow(windowDelegate.address));
                                     event.accepted = true;
                                 }
                             }

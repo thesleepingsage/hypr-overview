@@ -1,7 +1,6 @@
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
-import "." as Local
 
 Item {
     id: boardCanvas
@@ -59,19 +58,16 @@ Item {
 
     // ========== SWAP HANDLER (mirrors Grid Mode OverviewWidget.qml:129-148) ==========
     function handleWindowSwap(sourceAddress, targetAddress, snapBackCallback) {
-        const swapCmd = Local.Config.useHy3
-            ? `hy3:swapwindow address:${sourceAddress}, address:${targetAddress}`
-            : `swapwindow address:${targetAddress}`
-        console.log(`[Board] SWAP: ${swapCmd}`)
-        Hyprland.dispatch(swapCmd)
-
-        // Wait for HyprlandData to refresh, then snap back
-        function onDataUpdated() {
-            HyprlandData.windowListUpdated.disconnect(onDataUpdated)
-            if (snapBackCallback) snapBackCallback()
-        }
-        HyprlandData.windowListUpdated.connect(onDataUpdated)
-        HyprlandData.updateWindowList()
+        // Swap preserves the cursor position (swapWith warps it onto the window).
+        HyprlandDispatch.swapWindowsPreservingCursor(sourceAddress, targetAddress, () => {
+            // Wait for HyprlandData to refresh, then snap back
+            function onDataUpdated() {
+                HyprlandData.windowListUpdated.disconnect(onDataUpdated)
+                if (snapBackCallback) snapBackCallback()
+            }
+            HyprlandData.windowListUpdated.connect(onDataUpdated)
+            HyprlandData.updateWindowList()
+        })
         return true
     }
 
@@ -80,7 +76,7 @@ Item {
         if (targetWs === -1 || targetWs === currentWs) return false
 
         console.log(`[Board] MOVE: ws ${currentWs} -> ${targetWs}`)
-        Hyprland.dispatch(`movetoworkspacesilent ${targetWs}, address:${windowAddress}`)
+        Hyprland.dispatch(HyprlandDispatch.moveToWorkspace(windowAddress, targetWs, true))
 
         // Wait for HyprlandData to refresh, then snap back
         function onMoveDataUpdated() {
@@ -97,7 +93,7 @@ Item {
         if (targetWs !== -1 && targetWs !== sourceWs) {
             // Cross-workspace move
             console.log(`[Board] FLOAT MOVE: ws ${sourceWs} -> ${targetWs}`)
-            Hyprland.dispatch(`movetoworkspacesilent ${targetWs}, address:${windowAddress}`)
+            Hyprland.dispatch(HyprlandDispatch.moveToWorkspace(windowAddress, targetWs, true))
 
             function onFloatMoveDataUpdated() {
                 HyprlandData.windowListUpdated.disconnect(onFloatMoveDataUpdated)
@@ -131,7 +127,7 @@ Item {
         const absoluteY = Math.round(monitorY + posOnMonitorY)
 
         console.log(`[Board] FLOAT REPOSITION: (${absoluteX}, ${absoluteY})`)
-        Hyprland.dispatch(`movewindowpixel exact ${absoluteX} ${absoluteY}, address:${windowAddress}`)
+        Hyprland.dispatch(HyprlandDispatch.moveToPixel(windowAddress, absoluteX, absoluteY))
 
         if (snapBackCallback) snapBackCallback()
         return true
