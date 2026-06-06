@@ -7,6 +7,8 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## 0.4.0 - 2026-06-06
+
 ### Added
 
 - **App-icon visibility toggles** - `overview.showAppIcons` shows/hides the app icon overlaid on window previews (Grid + Board modes); `stashTrays.showAppIcons` toggles the app-icon fallback on stash-tray previews. Both default `true` (no change to existing behavior).
