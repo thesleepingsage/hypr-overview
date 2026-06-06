@@ -135,6 +135,8 @@ Initial release!
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| 0.4.0 | 2026-06-06 | App-icon visibility toggles; removed dead hy3 `layoutPlugin` config |
+| 0.3.1 | 2026-06-05 | Hyprland 0.55 Lua dispatch fix; swap cursor preservation |
 | 0.3.0 | 2026-06-05 | Board Mode v2, reactive Quickshell data layer, Hyprland 0.55 compat |
 | 0.2.1 | 2025-12-26 | Standalone mode fix |
 | 0.2.0 | 2025-12-19 | Stash tray feature for parking windows |
