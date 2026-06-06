@@ -9,7 +9,12 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ### Fixed
 
+- **Window operations silently no-op on Hyprland 0.55 (Lua config)** - Dragging a window to another workspace, stashing, swapping, repositioning a floating window, and focus/close/workspace-switch all stopped affecting the real compositor — the overview visuals updated but nothing moved. Root cause: Hyprland 0.55 evaluates the socket `dispatch` request as Lua (`return hl.dispatch(...)`) when the active config is Lua mode, so the legacy space-separated dispatcher strings were invalid Lua and no-op'd. Dispatches now route through a new `HyprlandDispatch` singleton that emits the `hl.dsp.*` Lua form or the legacy string form, branching on `Hyprland.usingLua`; StashState's `hyprctl dispatch` Process commands use the same builder. Also dropped the phantom `Config.useHy3` swap branch (`hy3:swapwindow` does not exist — vanilla swap works through hy3's layout).
 - **Installer wrapper drift** - `install.sh` now generates the full `hyo`/`hypr-overview` wrapper (with `reload`/`kill`/`stop` subcommands and `exec -a` process naming), matching the maintained version instead of a stripped-down one. Replaced the unsafe `killall quickshell; quickshell &` restart guidance — which killed *every* Quickshell instance (DMS, hypr-lens, …), not just hypr-overview — with hot-reload / `hyo reload` advice, and removed stale HDE references.
+
+### Changed
+
+- **Cursor stays put on same-workspace swap** - Swapping two windows on the active workspace no longer recenters the mouse onto the swapped window, matching the silent feel of cross-workspace moves. The cursor position is saved before the swap (`hyprctl cursorpos`) and restored after via `hl.dsp.cursor.move` / `movecursor` (Hyprland's swap action hardcodes a cursor warp with no per-call suppression).
 
 ## 0.3.0 - 2026-06-05
 
