@@ -261,6 +261,7 @@ Grid layout settings.
 | `orderRightLeft` | `false` | Reverse horizontal ordering |
 | `orderBottomUp` | `false` | Reverse vertical ordering |
 | `centerIcons` | `true` | Center app icons on previews |
+| `showAppIcons` | `true` | Show app icons on window previews |
 | `showWorkspaceNumbers` | `true` | Show workspace numbers |
 
 ### appearance
@@ -299,6 +300,7 @@ Window stashing settings.
 | `showEmptyTrays` | `false` | Show empty trays |
 | `position` | `"bottom"` | "top", "bottom", "left", "right" |
 | `previewScale` | `0.12` | Stashed window preview size |
+| `showAppIcons` | `true` | App-icon fallback on stash previews |
 
 ### boardMode
 

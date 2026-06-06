@@ -17,6 +17,7 @@ Workspace grid layout settings.
 | `orderRightLeft` | `false` | Reverse horizontal workspace ordering |
 | `orderBottomUp` | `false` | Reverse vertical workspace ordering |
 | `centerIcons` | `true` | Icon position: `true` = centered (35% of preview), `false` = top-left corner (15% of preview) |
+| `showAppIcons` | `true` | Show app icons overlaid on window previews |
 | `showWorkspaceNumbers` | `true` | Show workspace numbers in corners |
 
 **Grid presets:**
@@ -76,6 +77,7 @@ Window stashing feature - temporarily park windows in quick-access trays.
 | `showEmptyTrays` | `false` | Show trays even when empty |
 | `position` | `"bottom"` | Tray position: `"bottom"` or `"top"` |
 | `previewScale` | `0.12` | Stashed window preview size |
+| `showAppIcons` | `true` | App-icon fallback on stashed previews (when no live preview) |
 
 ### Tray definitions
 
@@ -226,6 +228,7 @@ workspace = 6, monitor:DP-3, defaultName:""
     "orderRightLeft": false,
     "orderBottomUp": false,
     "centerIcons": true,
+    "showAppIcons": true,
     "showWorkspaceNumbers": true
   },
   "appearance": {
@@ -244,7 +247,8 @@ workspace = 6, monitor:DP-3, defaultName:""
     "secondaryModifier": "Control",
     "showEmptyTrays": false,
     "position": "bottom",
-    "previewScale": 1.0
+    "previewScale": 1.0,
+    "showAppIcons": true
   },
   "iconMappings": {
     "net-runelite-client-RuneLite": "runelite"

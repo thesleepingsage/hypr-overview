@@ -105,6 +105,7 @@ Config file: `~/.config/hypr-overview/config.json`
     "orderRightLeft": false,        // Reverse horizontal ordering
     "orderBottomUp": false,         // Reverse vertical ordering
     "centerIcons": true,            // Center app icons on windows
+    "showAppIcons": true,           // Show app icons on window previews
     "showWorkspaceNumbers": true    // Show workspace numbers
   },
 
@@ -134,7 +135,8 @@ Config file: `~/.config/hypr-overview/config.json`
     "secondaryModifier": "Control", // Secondary tray modifier
     "showEmptyTrays": false,        // Show trays with no windows
     "position": "bottom",           // "bottom" or "top"
-    "previewScale": 0.12            // Stashed window preview size
+    "previewScale": 0.12,           // Stashed window preview size
+    "showAppIcons": true            // App-icon fallback on stash previews
   },
 
   // ─── Icon Mappings ──────────────────────────────────────────
@@ -156,6 +158,7 @@ Config file: `~/.config/hypr-overview/config.json`
 | | `columns` | `5` | Workspace grid columns |
 | | `scale` | `0.18` | Window preview scale factor |
 | | `centerIcons` | `true` | Center icons on window previews |
+| | `showAppIcons` | `true` | Show app icons on window previews |
 | `appearance` | `backdropOpacity` | `0.7` | Background dimming (0-1) |
 | | `animationDuration` | `200` | Animation speed in ms |
 | `stashTrays` | `enabled` | `true` | Enable/disable stash feature |

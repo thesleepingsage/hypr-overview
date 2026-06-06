@@ -26,6 +26,7 @@ Singleton {
     property bool orderRightLeft: false
     property bool orderBottomUp: false
     property bool centerIcons: true
+    property bool showAppIcons: true
     property bool showWorkspaceNumbers: true
 
     // Icon mappings for apps with mismatched window class / desktop entry
@@ -109,7 +110,8 @@ Singleton {
         showEmptyTrays: false,
         position: "bottom",              // "bottom" | "top" | "left" | "right"
         verticalFillMode: "centered",    // "centered" | "full" (for left/right positions)
-        previewScale: 1.0               // Scale multiplier for preview size (1.0 = 120x80 base)
+        previewScale: 1.0,              // Scale multiplier for preview size (1.0 = 120x80 base)
+        showAppIcons: true              // Show app-icon fallback on stashed window previews (when no live preview)
     })
 
     // --- Board Mode v2 Settings ---
@@ -222,6 +224,7 @@ Singleton {
                 orderRightLeft: root.orderRightLeft,
                 orderBottomUp: root.orderBottomUp,
                 centerIcons: root.centerIcons,
+                showAppIcons: root.showAppIcons,
                 showWorkspaceNumbers: root.showWorkspaceNumbers
             },
             appearance: {
@@ -261,6 +264,7 @@ Singleton {
                 if (config.overview.orderRightLeft !== undefined) root.orderRightLeft = config.overview.orderRightLeft
                 if (config.overview.orderBottomUp !== undefined) root.orderBottomUp = config.overview.orderBottomUp
                 if (config.overview.centerIcons !== undefined) root.centerIcons = config.overview.centerIcons
+                if (config.overview.showAppIcons !== undefined) root.showAppIcons = config.overview.showAppIcons
                 if (config.overview.showWorkspaceNumbers !== undefined) root.showWorkspaceNumbers = config.overview.showWorkspaceNumbers
             }
 
@@ -294,6 +298,7 @@ Singleton {
                 if (config.stashTrays.position !== undefined) stashConfig.position = config.stashTrays.position
                 if (config.stashTrays.verticalFillMode !== undefined) stashConfig.verticalFillMode = config.stashTrays.verticalFillMode
                 if (config.stashTrays.previewScale !== undefined) stashConfig.previewScale = config.stashTrays.previewScale
+                if (config.stashTrays.showAppIcons !== undefined) stashConfig.showAppIcons = config.stashTrays.showAppIcons
                 root.stashTrays = stashConfig
             }
 
