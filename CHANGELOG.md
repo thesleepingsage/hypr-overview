@@ -7,6 +7,8 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## 0.3.0 - 2026-06-05
+
 ### Added
 
 - **Board Mode** - New freeform workspace layout alternative to Grid Mode
@@ -112,6 +114,7 @@ Initial release!
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| 0.3.0 | 2026-06-05 | Board Mode v2, reactive Quickshell data layer, Hyprland 0.55 compat |
 | 0.2.1 | 2025-12-26 | Standalone mode fix |
 | 0.2.0 | 2025-12-19 | Stash tray feature for parking windows |
 | 0.1.0 | 2025-12-17 | Initial release with core overview functionality |
