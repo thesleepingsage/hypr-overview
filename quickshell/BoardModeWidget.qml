@@ -148,15 +148,30 @@ Item {
         onCleared: OverviewState.close()
     }
 
-    // Workspace clusters
+    // Workspace clusters - show if: has windows OR is explicitly revealed
     readonly property var workspaceList: {
         const allWorkspaces = HyprlandData.workspaces
+
+        // If showEmptyWorkspaces is true, show all (legacy behavior)
         if (OverviewConfig.boardMode.showEmptyWorkspaces) {
             return allWorkspaces
         }
+
+        // Otherwise, filter: show if has windows OR is revealed
         return allWorkspaces.filter(ws => {
-            return HyprlandData.toplevelsForWorkspace(ws.id).length > 0
+            const hasWindows = HyprlandData.toplevelsForWorkspace(ws.id).length > 0
+            const isRevealed = WorkspaceVisibilityState.isRevealed(ws.id)
+            return hasWindows || isRevealed
         })
+    }
+
+    // Re-evaluate workspaceList when visibility changes
+    Connections {
+        target: WorkspaceVisibilityState
+        function onVisibilityChanged() {
+            // Force workspaceList to re-evaluate by touching a dependency
+            boardCanvas.workspaceList
+        }
     }
 
     Repeater {
@@ -188,16 +203,14 @@ Item {
         anchors.verticalCenter: stashTrayContainer.isVerticalLayout && StashState.verticalFillMode === "centered" ? parent.verticalCenter : undefined
     }
 
-    // Sync reserved space to ClusterPositionState for Gandalf enforcement
+    // Sync stash tray bounds for vapor barrier collision
     Binding {
         target: ClusterPositionState
-        property: "reservedEdge"
-        value: stashTrayContainer.shouldShow ? StashState.position : "none"
-    }
-    Binding {
-        target: ClusterPositionState
-        property: "reservedSize"
-        value: stashTrayContainer.shouldShow ? stashTrayContainer.reservedSpace : 0
+        property: "stashTrayBounds"
+        value: stashTrayContainer.shouldShow
+            ? Qt.rect(stashTrayContainer.x, stashTrayContainer.y,
+                      stashTrayContainer.width, stashTrayContainer.height)
+            : Qt.rect(0, 0, 0, 0)
     }
 
     // Keyboard shortcuts
@@ -216,6 +229,28 @@ Item {
             OverviewState.toggleMode()
             event.accepted = true
         }
+        // T: Toggle stash tray visibility when empty (persists to config)
+        if (event.key === Qt.Key_T) {
+            OverviewConfig.toggleShowEmptyTrays()
+            event.accepted = true
+        }
+        // O: Settings (placeholder)
+        if (event.key === Qt.Key_O) {
+            console.log("[BoardMode] Settings not implemented")
+            event.accepted = true
+        }
+        // Reveal workspace (configurable, default: =)
+        const revealKey = OverviewConfig.getKeyCode(OverviewConfig.workspaceVisibility.revealKey)
+        if (revealKey && event.key === revealKey) {
+            WorkspaceVisibilityState.reveal()
+            event.accepted = true
+        }
+        // Hide workspace (configurable, default: -)
+        const hideKey = OverviewConfig.getKeyCode(OverviewConfig.workspaceVisibility.hideKey)
+        if (hideKey && event.key === hideKey) {
+            WorkspaceVisibilityState.hide()
+            event.accepted = true
+        }
     }
 
     // Background click closes overview
@@ -226,4 +261,5 @@ Item {
             OverviewState.close()
         }
     }
+
 }

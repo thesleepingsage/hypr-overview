@@ -521,16 +521,6 @@ Item {
             z: -1  // BEHIND windowSpace so windows receive events first
             drag.target: null  // Set dynamically when handling cluster drag
 
-            // Compute drag bounds based on reserved space (Gandalf enforcement)
-            readonly property real minX: ClusterPositionState.reservedEdge === "left" ? ClusterPositionState.reservedSize : 0
-            readonly property real minY: ClusterPositionState.reservedEdge === "top" ? ClusterPositionState.reservedSize : 0
-            readonly property real maxX: ClusterPositionState.reservedEdge === "right"
-                ? cluster.canvasWidth - ClusterPositionState.reservedSize - cluster.width
-                : cluster.canvasWidth - cluster.width
-            readonly property real maxY: ClusterPositionState.reservedEdge === "bottom"
-                ? cluster.canvasHeight - ClusterPositionState.reservedSize - cluster.height
-                : cluster.canvasHeight - cluster.height
-
             onPressed: (mouse) => {
                 // Only reaches here if window MouseArea rejected the event (modifier pressed)
                 clusterDragArea.drag.target = cluster
@@ -538,10 +528,17 @@ Item {
             }
 
             onPositionChanged: {
-                // Real-time clamping during drag (Gandalf: "You shall not pass!")
+                // Real-time clamping during drag (vapor barrier collision)
                 if (cluster.isDragging) {
-                    cluster.x = Math.max(minX, Math.min(maxX, cluster.x))
-                    cluster.y = Math.max(minY, Math.min(maxY, cluster.y))
+                    // Basic screen bounds
+                    cluster.x = Math.max(0, Math.min(cluster.canvasWidth - cluster.width, cluster.x))
+                    cluster.y = Math.max(0, Math.min(cluster.canvasHeight - cluster.height, cluster.y))
+
+                    // Vapor barrier collision with stash tray
+                    const clamped = ClusterPositionState.clampToAvoidTray(
+                        cluster.x, cluster.y, cluster.width, cluster.height)
+                    cluster.x = clamped.x
+                    cluster.y = clamped.y
                 }
             }
 

@@ -22,7 +22,9 @@ Item {
 
     // State
     property bool hasStashedWindows: StashState.totalStashedCount > 0
-    property bool shouldShow: StashState.enabled && (hasStashedWindows || StashState.showEmptyTrays)
+    // Show stash tray if: enabled AND (has windows OR showEmptyTrays)
+    property bool shouldShow: StashState.enabled &&
+        (hasStashedWindows || StashState.showEmptyTrays)
 
     // Layout mode detection
     readonly property bool isVerticalLayout: position === "left" || position === "right"

@@ -11,9 +11,39 @@ Singleton {
     // Reactive workspace count for auto-layout calculations
     property int workspaceCount: HyprlandData.workspaces.length
 
-    // Reserved space for stash tray (set by BoardModeWidget)
-    property string reservedEdge: "none"   // "none" | "top" | "bottom" | "left" | "right"
-    property real reservedSize: 0          // Pixels reserved for stash tray
+    // Stash tray bounds for vapor barrier collision (set by BoardModeWidget)
+    property rect stashTrayBounds: Qt.rect(0, 0, 0, 0)
+    property real vaporBarrier: 5  // px buffer around tray
+
+    // Check if two rects intersect
+    function rectsIntersect(ax, ay, aw, ah, bx, by, bw, bh) {
+        return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by
+    }
+
+    // Push cluster away from tray if overlapping
+    function clampToAvoidTray(x, y, w, h) {
+        if (stashTrayBounds.width === 0) return Qt.point(x, y)
+
+        console.log("[VaporBarrier] tray bounds:", stashTrayBounds.x, stashTrayBounds.y, stashTrayBounds.width, stashTrayBounds.height)
+        console.log("[VaporBarrier] cluster:", x, y, w, h)
+
+        // Expand tray bounds by vapor barrier
+        const tx = stashTrayBounds.x - vaporBarrier
+        const ty = stashTrayBounds.y - vaporBarrier
+        const tw = stashTrayBounds.width + vaporBarrier * 2
+        const th = stashTrayBounds.height + vaporBarrier * 2
+
+        if (!rectsIntersect(x, y, w, h, tx, ty, tw, th)) return Qt.point(x, y)
+
+        // Push away from tray based on cluster position relative to tray center
+        const clusterCenterY = y + h / 2
+        const trayCenterY = ty + th / 2
+        if (clusterCenterY < trayCenterY) {
+            return Qt.point(x, ty - h)  // Push up
+        } else {
+            return Qt.point(x, ty + th)  // Push down
+        }
+    }
 
     // Get position for workspace (converts percentage to pixels)
     function getPosition(workspaceId, viewWidth, viewHeight) {
@@ -30,36 +60,22 @@ Singleton {
         return calculateAutoPosition(workspaceId, vw, vh)
     }
 
-    // Save position after drag (converts pixels to percentage, with clamping for reserved zones)
+    // Save position after drag (converts pixels to percentage, with vapor barrier collision)
     function setPosition(workspaceId, x, y, viewWidth, viewHeight) {
         const vw = viewWidth ?? 1920
         const vh = viewHeight ?? 1080
 
-        // Clamp position to avoid reserved zone (Gandalf enforcement)
-        let clampedX = x
-        let clampedY = y
-
         // Get cluster size for bounds checking
         const clusterSize = calculateClusterSize(vw, vh)
 
-        switch (reservedEdge) {
-            case "top":
-                clampedY = Math.max(reservedSize, clampedY)
-                break
-            case "bottom":
-                clampedY = Math.min(vh - reservedSize - clusterSize.height, clampedY)
-                break
-            case "left":
-                clampedX = Math.max(reservedSize, clampedX)
-                break
-            case "right":
-                clampedX = Math.min(vw - reservedSize - clusterSize.width, clampedX)
-                break
-        }
+        // Ensure within screen bounds
+        let clampedX = Math.max(0, Math.min(vw - clusterSize.width, x))
+        let clampedY = Math.max(0, Math.min(vh - clusterSize.height, y))
 
-        // Ensure non-negative
-        clampedX = Math.max(0, clampedX)
-        clampedY = Math.max(0, clampedY)
+        // Apply vapor barrier collision with stash tray
+        const clamped = clampToAvoidTray(clampedX, clampedY, clusterSize.width, clusterSize.height)
+        clampedX = clamped.x
+        clampedY = clamped.y
 
         // Create shallow copy to trigger binding updates
         let newPositions = Object.assign({}, positions)
@@ -77,18 +93,8 @@ Singleton {
 
     // Calculate cluster size based on view dimensions (resolution-independent)
     function calculateClusterSize(viewWidth, viewHeight) {
-        let vw = viewWidth ?? 1920
-        let vh = viewHeight ?? 1080
-
-        // Reduce available space based on reserved edge (clusters shouldn't grow into stash tray area)
-        switch (reservedEdge) {
-            case "top": case "bottom":
-                vh -= reservedSize
-                break
-            case "left": case "right":
-                vw -= reservedSize
-                break
-        }
+        const vw = viewWidth ?? 1920
+        const vh = viewHeight ?? 1080
 
         const baseScale = OverviewConfig.boardMode.scale ?? 0.20
         const count = Math.max(workspaceCount, 1)
@@ -105,33 +111,10 @@ Singleton {
         return { width: width, height: height }
     }
 
-    // Calculate grid-based auto-layout position (uses view dimensions, respects reserved space)
+    // Calculate grid-based auto-layout position (uses view dimensions)
     function calculateAutoPosition(workspaceId, viewWidth, viewHeight) {
         const vw = viewWidth ?? 1920
         const vh = viewHeight ?? 1080
-
-        // Calculate usable area after reserved space
-        let usableX = 0
-        let usableY = 0
-        let usableWidth = vw
-        let usableHeight = vh
-
-        switch (reservedEdge) {
-            case "top":
-                usableY = reservedSize
-                usableHeight = vh - reservedSize
-                break
-            case "bottom":
-                usableHeight = vh - reservedSize
-                break
-            case "left":
-                usableX = reservedSize
-                usableWidth = vw - reservedSize
-                break
-            case "right":
-                usableWidth = vw - reservedSize
-                break
-        }
 
         const count = Math.max(workspaceCount, 1)
         const cols = Math.ceil(Math.sqrt(count))
@@ -143,8 +126,8 @@ Singleton {
         const padding = OverviewConfig.boardMode.padding
 
         return Qt.point(
-            usableX + padding + col * (clusterSize.width + spacing),
-            usableY + padding + row * (clusterSize.height + spacing)
+            padding + col * (clusterSize.width + spacing),
+            padding + row * (clusterSize.height + spacing)
         )
     }
 }

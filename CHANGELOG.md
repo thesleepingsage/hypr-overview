@@ -21,8 +21,10 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
   - Configurable `verticalFillMode`: "centered" or "full" height
   - Configurable `previewScale` for tray size customization
 - **Floating Window Reposition** - Drag floating windows to reposition within Board Mode clusters
-- **Cluster Drag Boundaries** - Clusters respect stash tray reserved space ("Gandalf" enforcement)
+- **Cluster Drag Boundaries** - Clusters respect stash tray space via vapor-barrier collision
 - **Config JSON Schema** - IDE validation and tooltips via config.schema.json
+- **Workspace Reveal/Hide** - Board Mode: reveal the next empty workspace (`=`) or hide an empty one (`-`); configurable keys and hide method (LIFO stack or highest-numbered)
+- **Empty Stash Tray Toggle** - Press `T` to keep stash trays visible while empty (persists to config)
 
 ### Fixed
 

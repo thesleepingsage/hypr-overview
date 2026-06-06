@@ -139,6 +139,39 @@ Singleton {
         clusterDrag: "Ctrl"            // Modifier for dragging clusters
     })
 
+    // Workspace visibility settings (Board Mode reveal/hide feature)
+    property var workspaceVisibility: ({
+        revealKey: "=",                // Key to reveal next empty workspace
+        hideKey: "-",                  // Key to hide empty workspace
+        hideMethod: "stack",           // "stack" (LIFO) or "highest" (highest-numbered first)
+        dynamicWorkspacePrefix: "hyo-ws",  // Prefix for dynamically created workspaces
+        workspacesConfigPath: ""       // Path to workspaces.conf for monitor→workspace mappings
+    })
+
+    // Signal for workspaceVisibility config reload
+    signal workspaceVisibilityConfigReloaded()
+
+    // Helper to map key names to Qt key codes (for configurable keybinds)
+    readonly property var _keyMap: ({
+        "=": Qt.Key_Equal,
+        "-": Qt.Key_Minus,
+        "+": Qt.Key_Plus,
+        "[": Qt.Key_BracketLeft,
+        "]": Qt.Key_BracketRight,
+        ",": Qt.Key_Comma,
+        ".": Qt.Key_Period,
+        "/": Qt.Key_Slash,
+        "\\": Qt.Key_Backslash,
+        ";": Qt.Key_Semicolon,
+        "'": Qt.Key_Apostrophe,
+        "`": Qt.Key_QuoteLeft
+    })
+
+    // Get Qt key code for a configured key
+    function getKeyCode(keyName) {
+        return _keyMap[keyName] ?? 0
+    }
+
     // Helper to map modifier names to Qt flags
     readonly property var _modifierMap: ({
         "Ctrl": Qt.ControlModifier,
@@ -175,6 +208,14 @@ Singleton {
         _saveConfig()
     }
 
+    // Toggle stash tray visibility when empty
+    function toggleShowEmptyTrays() {
+        let stashConfig = Object.assign({}, root.stashTrays)
+        stashConfig.showEmptyTrays = !stashConfig.showEmptyTrays
+        root.stashTrays = stashConfig
+        _saveConfig()
+    }
+
     // Internal: save current config state to file
     function _saveConfig() {
         // Build complete config from current state (preserves all settings)
@@ -200,7 +241,8 @@ Singleton {
             activeMode: root.activeMode,
             initialSetupDone: root.initialSetupDone,
             boardMode: root.boardMode,
-            modifiers: root.modifiers
+            modifiers: root.modifiers,
+            workspaceVisibility: root.workspaceVisibility
         }
 
         const newContent = JSON.stringify(config, null, 2)
@@ -290,6 +332,18 @@ Singleton {
                 let modConfig = Object.assign({}, root.modifiers)
                 if (config.modifiers.clusterDrag !== undefined) modConfig.clusterDrag = config.modifiers.clusterDrag
                 root.modifiers = modConfig
+            }
+
+            // Workspace visibility settings (shallow copy ensures binding updates trigger)
+            if (config.workspaceVisibility) {
+                let wsConfig = Object.assign({}, root.workspaceVisibility)
+                if (config.workspaceVisibility.revealKey !== undefined) wsConfig.revealKey = config.workspaceVisibility.revealKey
+                if (config.workspaceVisibility.hideKey !== undefined) wsConfig.hideKey = config.workspaceVisibility.hideKey
+                if (config.workspaceVisibility.hideMethod !== undefined) wsConfig.hideMethod = config.workspaceVisibility.hideMethod
+                if (config.workspaceVisibility.dynamicWorkspacePrefix !== undefined) wsConfig.dynamicWorkspacePrefix = config.workspaceVisibility.dynamicWorkspacePrefix
+                if (config.workspaceVisibility.workspacesConfigPath !== undefined) wsConfig.workspacesConfigPath = config.workspaceVisibility.workspacesConfigPath
+                root.workspaceVisibility = wsConfig
+                root.workspaceVisibilityConfigReloaded()
             }
 
             console.log("[hypr-overview] Config loaded successfully")

@@ -183,10 +183,21 @@ Scope {
             Keys.onDownPressed: navigateWorkspace(0, 1)
             Keys.onReturnPressed: OverviewState.close()
 
-            // Mode toggle: M key switches between Grid and Board mode
+            // Keyboard shortcuts
             Keys.onPressed: (event) => {
+                // M: Toggle Grid/Board mode
                 if (event.key === Qt.Key_M) {
                     OverviewState.toggleMode()
+                    event.accepted = true
+                }
+                // T: Toggle stash tray visibility when empty (persists to config)
+                if (event.key === Qt.Key_T) {
+                    OverviewConfig.toggleShowEmptyTrays()
+                    event.accepted = true
+                }
+                // O: Settings (placeholder)
+                if (event.key === Qt.Key_O) {
+                    console.log("[Overview] Settings not implemented")
                     event.accepted = true
                 }
             }
