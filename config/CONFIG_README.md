@@ -177,6 +177,44 @@ Configurable modifier keys for interactions.
 
 ---
 
+## workspaceVisibility
+
+Settings for dynamically revealing/hiding empty workspaces in Board Mode.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `revealKey` | `"="` | Key to reveal the next empty workspace on current monitor |
+| `hideKey` | `"-"` | Key to hide an empty workspace |
+| `hideMethod` | `"stack"` | Hide method: `"stack"` (LIFO - last revealed first hidden) or `"highest"` (highest-numbered first) |
+| `dynamicWorkspacePrefix` | `"hyo-ws"` | Prefix for dynamically created workspaces (e.g., `hyo-ws-1`) |
+| `workspacesConfigPath` | `""` | Path to your Hyprland workspaces.conf for monitor→workspace mappings |
+
+**How it works:**
+1. Press `=` in Board Mode to reveal the next empty workspace on the current monitor
+2. If you have a `workspacesConfigPath` set, it uses your defined workspaces (e.g., DP-3 → 4, 5, 6)
+3. After all defined workspaces are visible, creates dynamic workspaces (`hyo-ws-1`, etc.)
+4. Press `-` to hide empty workspaces (never hides workspaces with windows)
+
+**Example with workspace definitions:**
+```json
+"workspaceVisibility": {
+  "revealKey": "=",
+  "hideKey": "-",
+  "hideMethod": "stack",
+  "dynamicWorkspacePrefix": "hyo-ws",
+  "workspacesConfigPath": "~/.config/hypr/configs/init/workspaces.conf"
+}
+```
+
+**Example workspaces.conf format:**
+```conf
+workspace = 4, monitor:DP-3, defaultName:"Main", default:true,
+workspace = 5, monitor:DP-3, defaultName:""
+workspace = 6, monitor:DP-3, defaultName:""
+```
+
+---
+
 ## layoutPlugin
 
 Layout plugin detection for window swapping.
@@ -240,6 +278,13 @@ Layout plugin detection for window swapping.
   },
   "modifiers": {
     "clusterDrag": "Ctrl"
+  },
+  "workspaceVisibility": {
+    "revealKey": "=",
+    "hideKey": "-",
+    "hideMethod": "stack",
+    "dynamicWorkspacePrefix": "hyo-ws",
+    "workspacesConfigPath": ""
   },
   "layoutPlugin": "auto"
 }
