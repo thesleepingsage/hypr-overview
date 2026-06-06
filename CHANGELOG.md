@@ -7,6 +7,10 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+### Fixed
+
+- **Installer wrapper drift** - `install.sh` now generates the full `hyo`/`hypr-overview` wrapper (with `reload`/`kill`/`stop` subcommands and `exec -a` process naming), matching the maintained version instead of a stripped-down one. Replaced the unsafe `killall quickshell; quickshell &` restart guidance — which killed *every* Quickshell instance (DMS, hypr-lens, …), not just hypr-overview — with hot-reload / `hyo reload` advice, and removed stale HDE references.
+
 ## 0.3.0 - 2026-06-05
 
 ### Added

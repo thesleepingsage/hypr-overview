@@ -259,14 +259,38 @@ install_wrapper() {
     cat > "$WRAPPER_PATH" << 'EOF'
 #!/bin/sh
 # hypr-overview wrapper - auto-detaches for launch, sync for IPC
+# Aliases: hyo, hypr-overview (for pkill compatibility)
 
 QS_PATH="$HOME/.config/quickshell/hypr-overview"
+PROCESS_NAME="hypr-overview|hyo"  # Used in exec -a and pkill
 
-if [ "$1" = "ipc" ]; then
-    exec qs -p "$QS_PATH" "$@"
-fi
+# Kill function - terminates hypr-overview processes
+kill_existing() {
+    pkill -f "$PROCESS_NAME.*quickshell" 2>/dev/null
+}
 
-setsid -f qs -p "$QS_PATH" "$@" &>/dev/null
+# Handle commands
+case "$1" in
+    reload)
+        kill_existing
+        sleep 0.2  # Brief pause for clean shutdown
+        shift
+        exec "$0" "$@"  # Relaunch (recursive call to this script)
+        ;;
+    kill|stop)
+        kill_existing
+        exit 0
+        ;;
+    ipc)
+        # IPC calls need synchronous execution for output
+        exec qs -p "$QS_PATH" "$@"
+        ;;
+    *)
+        # Launch mode: detach from terminal
+        # exec -a sets argv[0] so both pkill -f hyo and pkill -f hypr-overview work
+        setsid -f sh -c "exec -a '$PROCESS_NAME' qs -p '$QS_PATH' $*" &>/dev/null
+        ;;
+esac
 EOF
     chmod +x "$WRAPPER_PATH"
 
@@ -395,8 +419,9 @@ show_next_steps() {
     echo ""
 
     if $AUTO_INTEGRATED; then
-        echo -e "1. ${BOLD}Restart quickshell:${NC}"
-        echo "   killall quickshell; quickshell &"
+        echo -e "1. ${BOLD}Apply changes:${NC}"
+        echo "   Quickshell hot-reloads on file change, so it should appear automatically."
+        echo "   (If not, restart your shell the way you normally launch it.)"
         echo ""
         echo -e "   ${GREEN}(Integration was done automatically)${NC}"
     elif $USE_INTEGRATED; then
@@ -414,8 +439,8 @@ show_next_steps() {
         echo -e "      ${CYAN}    // ... your existing content ...${NC}"
         echo -e "      ${CYAN}}${NC}"
         echo ""
-        echo -e "2. ${BOLD}Restart quickshell:${NC}"
-        echo "   killall quickshell; quickshell &"
+        echo -e "2. ${BOLD}Apply changes:${NC}"
+        echo "   Quickshell hot-reloads on file change; restart your shell only if needed."
     else
         echo -e "1. ${BOLD}Start hypr-overview (for this session):${NC}"
         echo "   hypr-overview"
@@ -614,10 +639,10 @@ update() {
     # Check shell integration - offer recovery if missing
     if is_shell_integrated; then
         success "Shell integration verified"
-        info "Restart quickshell to apply changes:"
-        echo "  killall quickshell; quickshell &"
+        info "Quickshell hot-reloads on file change — updates apply automatically."
+        echo "  (Standalone install? run: hyo reload)"
     else
-        warn "Shell integration missing (shell.qml may have been overwritten by HDE update)"
+        warn "Shell integration not detected in shell.qml (expected for standalone installs)"
         echo ""
         echo "  Options:"
         echo "    1) Auto-integrate into shell.qml (creates backup)"
@@ -630,7 +655,7 @@ update() {
             1)
                 auto_integrate_shell
                 echo ""
-                info "Restart quickshell: killall quickshell; quickshell &"
+                info "Quickshell hot-reloads on file change; restart your shell only if needed."
                 ;;
             2)
                 echo ""
