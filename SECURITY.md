@@ -37,7 +37,7 @@ The installer only touches files in your user directories:
 | Lines | Section | What It Does |
 |-------|---------|--------------|
 | 1-7 | Shebang + safety | `set -eu` enables strict error handling |
-| 9-60 | Help & args | Parses `--help`, `--dry-run`, `--uninstall`, `--update`, `--link` |
+| 9-60 | Help & args | Parses `--help`, `--dry-run`, `--uninstall`, `--update` |
 | 62-99 | Configuration | Defines paths, colors, helper functions (no execution) |
 | 100-150 | Helper functions | Utility functions for output and user prompts |
 | 151-165 | Detection | Checks if already installed or integrated |

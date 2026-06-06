@@ -49,7 +49,6 @@ The installer will:
 ./install.sh --help      # Show help
 ./install.sh --dry-run   # Preview changes without modifying files
 ./install.sh --update    # Quick update (preserves config)
-./install.sh --link      # Symlink instead of copy (for development)
 ./install.sh --uninstall # Remove all components
 ```
 
