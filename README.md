@@ -27,7 +27,6 @@ Watch the demo:
 |-------------|--------|
 | [Hyprland](https://hyprland.org/) | Required |
 | [Quickshell](https://quickshell.outfoxxed.me/) | Required |
-| [hy3](https://github.com/outfoxxed/hy3) | Optional (compatible tiling layout — no special config needed) |
 
 ## Installation
 
