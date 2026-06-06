@@ -215,23 +215,6 @@ workspace = 6, monitor:DP-3, defaultName:""
 
 ---
 
-## layoutPlugin
-
-Layout plugin detection for window swapping.
-
-| Value | Description |
-|-------|-------------|
-| `"auto"` | Auto-detect hy3 at runtime (default) |
-| `"hy3"` | Force hy3 mode (use `hy3:movewindow` for swaps) |
-| `"default"` | Force vanilla Hyprland mode |
-
-**When to use:**
-- Leave as `"auto"` for most setups
-- Set to `"hy3"` if auto-detection fails but you have hy3 installed
-- Set to `"default"` to disable hy3 integration even if installed
-
----
-
 ## Full Example
 
 ```json
@@ -285,8 +268,7 @@ Layout plugin detection for window swapping.
     "hideMethod": "stack",
     "dynamicWorkspacePrefix": "hyo-ws",
     "workspacesConfigPath": ""
-  },
-  "layoutPlugin": "auto"
+  }
 }
 ```
 

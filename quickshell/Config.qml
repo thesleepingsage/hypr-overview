@@ -97,10 +97,6 @@ Singleton {
     property color activeBorderColor: _resolveColor(themeJson.primary, "activeBorderColor", _defaultActiveBorder)
     property color workspaceNumberColor: _resolveColor(themeJson.outline_variant, "workspaceNumberColor", _defaultWorkspaceNumber)
 
-    // Layout plugin detection
-    // "auto" = detect at runtime, "hy3" = force hy3, "default" = force vanilla Hyprland
-    property string layoutPlugin: "auto"
-
     // Stash tray settings
     property var stashTrays: ({
         enabled: true,
@@ -115,8 +111,6 @@ Singleton {
         verticalFillMode: "centered",    // "centered" | "full" (for left/right positions)
         previewScale: 1.0               // Scale multiplier for preview size (1.0 = 120x80 base)
     })
-    property bool _hy3Detected: false
-    readonly property bool useHy3: layoutPlugin === "hy3" || (layoutPlugin === "auto" && _hy3Detected)
 
     // --- Board Mode v2 Settings ---
 
@@ -289,9 +283,6 @@ Singleton {
                 }
             }
 
-            // Layout plugin override
-            if (config.layoutPlugin !== undefined) root.layoutPlugin = config.layoutPlugin
-
             // Stash tray settings (shallow copy ensures binding updates trigger)
             if (config.stashTrays) {
                 let stashConfig = Object.assign({}, root.stashTrays)
@@ -454,50 +445,4 @@ Singleton {
         }
     }
 
-    // Detect hy3 plugin at runtime - check both hyprctl and hyprpm
-    Process {
-        id: hy3DetectorHyprctl
-        command: ["hyprctl", "plugins", "list"]
-
-        stdout: SplitParser {
-            onRead: data => {
-                if (data.toLowerCase().includes("hy3")) {
-                    root._hy3Detected = true
-                    console.log("[hypr-overview] hy3 detected via hyprctl plugins")
-                }
-            }
-        }
-
-        onExited: {
-            // Also check hyprpm list for typical installations
-            if (!root._hy3Detected) {
-                hy3DetectorHyprpm.running = true
-            } else {
-                console.log("[hypr-overview] Layout mode:", root.useHy3 ? "hy3" : "default")
-            }
-        }
-    }
-
-    Process {
-        id: hy3DetectorHyprpm
-        command: ["hyprpm", "list"]
-
-        stdout: SplitParser {
-            onRead: data => {
-                if (data.toLowerCase().includes("hy3")) {
-                    root._hy3Detected = true
-                    console.log("[hypr-overview] hy3 detected via hyprpm")
-                }
-            }
-        }
-
-        onExited: {
-            console.log("[hypr-overview] Layout mode:", root.useHy3 ? "hy3" : "default")
-        }
-    }
-
-    Component.onCompleted: {
-        // FileView auto-loads and watches for changes
-        hy3DetectorHyprctl.running = true
-    }
 }

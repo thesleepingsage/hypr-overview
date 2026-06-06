@@ -76,8 +76,6 @@ Middle-click a window preview to close that window.
 2. The two windows swap positions
 3. Works across workspaces
 
-> **hy3 Support**: If hy3 plugin is installed, swaps use `hy3:movewindow` for better tiling behavior.
-
 ## Stash Trays
 
 Stash trays let you "park" windows temporarily without closing them.
@@ -329,7 +327,6 @@ Modifier key configuration.
 |---------|---------|-------------|
 | `activeMode` | `"grid"` | Current mode: "grid" or "board" |
 | `initialSetupDone` | `false` | First-run dialog completed |
-| `layoutPlugin` | `"auto"` | "auto", "hy3", or "default" |
 | `iconMappings` | `{}` | Window class → icon overrides |
 
 ## IPC Commands

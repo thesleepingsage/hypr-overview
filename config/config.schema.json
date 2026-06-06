@@ -128,21 +128,6 @@
         }
       ]
     },
-    "layoutPlugin": {
-      "type": "string",
-      "description": "Layout plugin detection mode",
-      "enum": [
-        "auto",
-        "hy3",
-        "default"
-      ],
-      "default": "auto",
-      "enumDescriptions": [
-        "Auto-detect hy3 plugin at runtime",
-        "Force hy3 layout mode",
-        "Force vanilla Hyprland layout"
-      ]
-    },
     "stashTrays": {
       "type": "object",
       "description": "Stash tray configuration for temporarily hiding windows",
