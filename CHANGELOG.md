@@ -7,6 +7,8 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## 0.3.1 - 2026-06-05
+
 ### Fixed
 
 - **Window operations silently no-op on Hyprland 0.55 (Lua config)** - Dragging a window to another workspace, stashing, swapping, repositioning a floating window, and focus/close/workspace-switch all stopped affecting the real compositor — the overview visuals updated but nothing moved. Root cause: Hyprland 0.55 evaluates the socket `dispatch` request as Lua (`return hl.dispatch(...)`) when the active config is Lua mode, so the legacy space-separated dispatcher strings were invalid Lua and no-op'd. Dispatches now route through a new `HyprlandDispatch` singleton that emits the `hl.dsp.*` Lua form or the legacy string form, branching on `Hyprland.usingLua`; StashState's `hyprctl dispatch` Process commands use the same builder. Also dropped the phantom `Config.useHy3` swap branch (`hy3:swapwindow` does not exist — vanilla swap works through hy3's layout).
