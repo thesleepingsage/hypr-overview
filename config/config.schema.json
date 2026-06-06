@@ -43,6 +43,11 @@
           "description": "Icon position in window previews: true = centered (larger, 35% of preview), false = top-left corner (smaller, 15% of preview)",
           "default": true
         },
+        "showAppIcons": {
+          "type": "boolean",
+          "description": "Show app icons overlaid on overview window previews",
+          "default": true
+        },
         "showWorkspaceNumbers": {
           "type": "boolean",
           "description": "Show workspace number labels on each workspace",
@@ -126,21 +131,6 @@
         {
           "steam_app_12345": "steam"
         }
-      ]
-    },
-    "layoutPlugin": {
-      "type": "string",
-      "description": "Layout plugin detection mode",
-      "enum": [
-        "auto",
-        "hy3",
-        "default"
-      ],
-      "default": "auto",
-      "enumDescriptions": [
-        "Auto-detect hy3 plugin at runtime",
-        "Force hy3 layout mode",
-        "Force vanilla Hyprland layout"
       ]
     },
     "stashTrays": {
@@ -244,6 +234,11 @@
           "default": 1.0,
           "minimum": 0.5,
           "maximum": 3.0
+        },
+        "showAppIcons": {
+          "type": "boolean",
+          "description": "Show app-icon fallback on stashed window previews (when no live preview)",
+          "default": true
         }
       }
     },

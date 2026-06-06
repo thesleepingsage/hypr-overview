@@ -217,7 +217,7 @@ Rectangle {
                                     anchors.centerIn: parent
                                     width: 32
                                     height: 32
-                                    visible: windowPreview.toplevel === undefined
+                                    visible: windowPreview.toplevel === undefined && StashState.showAppIcons
                                     source: OverviewConfig.resolveIconPath(windowPreview.windowData?.class ?? "")
                                 }
 

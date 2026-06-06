@@ -7,6 +7,14 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+### Added
+
+- **App-icon visibility toggles** - `overview.showAppIcons` shows/hides the app icon overlaid on window previews (Grid + Board modes); `stashTrays.showAppIcons` toggles the app-icon fallback on stash-tray previews. Both default `true` (no change to existing behavior).
+
+### Removed
+
+- **`layoutPlugin` config key and hy3 auto-detection** - Removed the `layoutPlugin` option, the `useHy3` flag, and the runtime hy3-detector processes, which had no remaining effect after the 0.3.1 dispatch migration (hy3 needs no special handling — vanilla swap routes through its layout interface). Existing configs that still contain `layoutPlugin` are harmlessly ignored. Also corrected docs that incorrectly claimed hy3 enabled "enhanced swap" via `hy3:movewindow`.
+
 ## 0.3.1 - 2026-06-05
 
 ### Fixed

@@ -25,6 +25,7 @@ Singleton {
     property string position: OverviewConfig.stashTrays?.position ?? "bottom"
     property string verticalFillMode: OverviewConfig.stashTrays?.verticalFillMode ?? "centered"
     property real previewScale: OverviewConfig.stashTrays?.previewScale ?? 0.12
+    property bool showAppIcons: OverviewConfig.stashTrays?.showAppIcons ?? true
 
     // Drag-drop state tracking (mirrors workspace drag pattern)
     property string draggingTargetStash: ""  // Which tray we're hovering over during drag

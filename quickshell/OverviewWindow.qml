@@ -186,6 +186,7 @@ Item {
     // App icon
     Image {
         id: windowIcon
+        visible: OverviewConfig.showAppIcons
         property real baseSize: Math.min(root.width, root.height)  // Use actual rendered size (works for both grid and cascade mode)
         property real iconSize: baseSize * (root.compactMode ? root.iconToWindowRatioCompact : root.iconToWindowRatio)
 

@@ -20,7 +20,6 @@ Watch the demo:
 - **Stash Trays** - Park windows temporarily in quick-access trays
 - **Keyboard Navigation** - Arrow keys to navigate, Escape to close
 - **Multi-monitor** - Works across all connected displays
-- **hy3 Support** - Auto-detects hy3 plugin for enhanced swap operations
 
 ## Requirements
 
@@ -28,7 +27,7 @@ Watch the demo:
 |-------------|--------|
 | [Hyprland](https://hyprland.org/) | Required |
 | [Quickshell](https://quickshell.outfoxxed.me/) | Required |
-| [hy3](https://github.com/outfoxxed/hy3) | Optional (enhanced window swapping) |
+| [hy3](https://github.com/outfoxxed/hy3) | Optional (compatible tiling layout — no special config needed) |
 
 ## Installation
 
@@ -106,6 +105,7 @@ Config file: `~/.config/hypr-overview/config.json`
     "orderRightLeft": false,        // Reverse horizontal ordering
     "orderBottomUp": false,         // Reverse vertical ordering
     "centerIcons": true,            // Center app icons on windows
+    "showAppIcons": true,           // Show app icons on window previews
     "showWorkspaceNumbers": true    // Show workspace numbers
   },
 
@@ -135,7 +135,8 @@ Config file: `~/.config/hypr-overview/config.json`
     "secondaryModifier": "Control", // Secondary tray modifier
     "showEmptyTrays": false,        // Show trays with no windows
     "position": "bottom",           // "bottom" or "top"
-    "previewScale": 0.12            // Stashed window preview size
+    "previewScale": 0.12,           // Stashed window preview size
+    "showAppIcons": true            // App-icon fallback on stash previews
   },
 
   // ─── Icon Mappings ──────────────────────────────────────────
@@ -143,10 +144,7 @@ Config file: `~/.config/hypr-overview/config.json`
   "iconMappings": {
     "net-runelite-client-RuneLite": "runelite",
     "some-other-app": "icon-name"
-  },
-
-  // ─── Layout Plugin ──────────────────────────────────────────
-  "layoutPlugin": "auto"            // "auto", "hy3", or "default"
+  }
 }
 ```
 
@@ -160,12 +158,12 @@ Config file: `~/.config/hypr-overview/config.json`
 | | `columns` | `5` | Workspace grid columns |
 | | `scale` | `0.18` | Window preview scale factor |
 | | `centerIcons` | `true` | Center icons on window previews |
+| | `showAppIcons` | `true` | Show app icons on window previews |
 | `appearance` | `backdropOpacity` | `0.7` | Background dimming (0-1) |
 | | `animationDuration` | `200` | Animation speed in ms |
 | `stashTrays` | `enabled` | `true` | Enable/disable stash feature |
 | | `position` | `"bottom"` | Tray position: `"bottom"` or `"top"` |
 | `iconMappings` | | `{}` | Window class → icon name overrides |
-| `layoutPlugin` | | `"auto"` | `"auto"`, `"hy3"`, or `"default"` |
 
 ### Icon Mappings
 
@@ -260,10 +258,6 @@ qs ipc call overview unstashAll quick
 ### Window thumbnails not showing
 - This requires `Toplevel` capture support in Quickshell
 - Ensure you're using a recent quickshell-git build
-
-### hy3 swap not working
-- hy3 is optional - basic swap works without it
-- If hy3 is installed, swap uses `hy3:movewindow` for better results
 
 ## Related Projects
 
