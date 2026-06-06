@@ -254,7 +254,7 @@ Scope {
             const workspaceGroup = Math.floor((currentWs - 1) / (rows * cols))
             const newWs = workspaceGroup * (rows * cols) + newRow * cols + newCol + 1
 
-            Hyprland.dispatch(`workspace ${newWs}`)
+            Hyprland.dispatch(HyprlandDispatch.focusWorkspace(newWs))
         }
     }
 }

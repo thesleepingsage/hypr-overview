@@ -4,7 +4,6 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Hyprland
-import "." as Local
 
 /**
  * OverviewWidget - Main workspace grid component
@@ -133,9 +132,7 @@ Item {
      * @returns true if swap was executed
      */
     function handleWindowSwap(windowDelegate, targetWindow, snapBackTimer) {
-        const swapCmd = Local.Config.useHy3
-            ? `hy3:swapwindow address:${windowDelegate.address}, address:${targetWindow}`
-            : `swapwindow address:${targetWindow}`;
+        const swapCmd = HyprlandDispatch.swapWindows(windowDelegate.address, targetWindow);
         console.log(`[hypr-overview] SWAP: ${swapCmd}`);
         Hyprland.dispatch(swapCmd);
 
@@ -157,7 +154,7 @@ Item {
         if (targetWs !== -1 && targetWs !== sourceWs) {
             // Cross-workspace move
             console.log(`[hypr-overview] FLOAT MOVE: ws ${sourceWs} -> ${targetWs}`);
-            Hyprland.dispatch(`movetoworkspacesilent ${targetWs}, address:${windowDelegate.address}`);
+            Hyprland.dispatch(HyprlandDispatch.moveToWorkspace(windowDelegate.address, targetWs, true));
         } else {
             // Same-ws reposition - use absolute pixel coordinates
             const posInWorkspaceX = windowDelegate.x - windowDelegate.xOffset;
@@ -169,7 +166,7 @@ Item {
             const absoluteX = Math.round(monitorX + posOnMonitorX);
             const absoluteY = Math.round(monitorY + posOnMonitorY);
             console.log(`[hypr-overview] FLOAT REPOSITION: ${absoluteX}, ${absoluteY}`);
-            Hyprland.dispatch(`movewindowpixel exact ${absoluteX} ${absoluteY}, address:${windowDelegate.address}`);
+            Hyprland.dispatch(HyprlandDispatch.moveToPixel(windowDelegate.address, absoluteX, absoluteY));
         }
         return true;
     }
@@ -182,7 +179,7 @@ Item {
         if (targetWs === -1 || targetWs === currentWs) return false;
 
         console.log(`[hypr-overview] MOVE: ws ${currentWs} -> ${targetWs}`);
-        Hyprland.dispatch(`movetoworkspacesilent ${targetWs}, address:${windowDelegate.address}`);
+        Hyprland.dispatch(HyprlandDispatch.moveToWorkspace(windowDelegate.address, targetWs, true));
 
         // Wait for HyprlandData to refresh, then snap to correct position
         function onMoveDataUpdated() {
@@ -270,7 +267,7 @@ Item {
                                 onPressed: {
                                     if (root.draggingTargetWorkspace === -1) {
                                         OverviewState.close();
-                                        Hyprland.dispatch(`workspace ${workspace.workspaceValue}`);
+                                        Hyprland.dispatch(HyprlandDispatch.focusWorkspace(workspace.workspaceValue));
                                     }
                                 }
                             }
@@ -480,7 +477,7 @@ Item {
 
                             if (event.button === Qt.MiddleButton) {
                                 // Middle click: close window
-                                Hyprland.dispatch(`closewindow address:${windowDelegate.winData.address}`);
+                                Hyprland.dispatch(HyprlandDispatch.closeWindow(windowDelegate.winData.address));
                                 event.accepted = true;
                             } else if (event.button === Qt.LeftButton) {
                                 // Check modifiers for stash operations (uses configured keys from StashState)
@@ -500,7 +497,7 @@ Item {
                                 } else {
                                     // Regular left click: focus window
                                     OverviewState.close();
-                                    Hyprland.dispatch(`focuswindow address:${windowDelegate.winData.address}`);
+                                    Hyprland.dispatch(HyprlandDispatch.focusWindow(windowDelegate.winData.address));
                                     event.accepted = true;
                                 }
                             }

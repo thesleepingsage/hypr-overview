@@ -90,7 +90,7 @@ Singleton {
         if (!existingWs) {
             // Workspace doesn't exist yet, create it on the target monitor
             console.log("[WorkspaceVisibility] Creating workspace", workspaceId, "on", monitorName)
-            Hyprland.dispatch(`workspace ${workspaceId}`)
+            Hyprland.dispatch(HyprlandDispatch.focusWorkspace(workspaceId))
             // Switch back immediately (we just want to create it, not switch to it)
             // Note: This will create the workspace on the monitor defined in user's hyprland config
         }
@@ -122,7 +122,7 @@ Singleton {
         console.log("[WorkspaceVisibility] Creating dynamic workspace", wsName, "on", monitorName)
 
         // Create named workspace on specific monitor
-        Hyprland.dispatch(`workspace name:${wsName}`)
+        Hyprland.dispatch(HyprlandDispatch.focusWorkspace(`name:${wsName}`))
 
         // Track it as revealed (use the name as ID since we don't know the numeric ID yet)
         // We'll need to refresh HyprlandData and find the new workspace

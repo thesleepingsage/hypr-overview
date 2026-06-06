@@ -169,7 +169,7 @@ Singleton {
         stashedWindows = newState;
 
         // Execute hyprctl command
-        _stashCommand.command = ["hyprctl", "dispatch", "movetoworkspacesilent", `${specialWs},address:${address}`];
+        _stashCommand.command = ["hyprctl", "dispatch", HyprlandDispatch.moveToWorkspace(address, specialWs, true)];
         _stashCommand.running = true;
 
         console.log("[StashState] Stashing window", address, "to", trayKey, "from workspace", originWorkspace);
@@ -240,9 +240,8 @@ Singleton {
         newState[foundTray] = newState[foundTray].filter(w => w.address !== address);
         stashedWindows = newState;
 
-        // Execute hyprctl command
-        const dispatchCmd = focusAfter ? "movetoworkspace" : "movetoworkspacesilent";
-        _unstashCommand.command = ["hyprctl", "dispatch", dispatchCmd, `${targetWs},address:${address}`];
+        // Execute hyprctl command (silent unless we should follow focus)
+        _unstashCommand.command = ["hyprctl", "dispatch", HyprlandDispatch.moveToWorkspace(address, targetWs, !focusAfter)];
         _unstashCommand.running = true;
 
         // Store rollback data on the Process for potential failure recovery
@@ -295,7 +294,7 @@ Singleton {
                     originWorkspaceName: currentWs.name,
                     stashedAt: Date.now()
                 });
-                batchCmds.push(`dispatch movetoworkspacesilent ${specialWs},address:${win.address}`);
+                batchCmds.push(`dispatch ${HyprlandDispatch.moveToWorkspace(win.address, specialWs, true)}`);
             }
         }
 
@@ -334,7 +333,7 @@ Singleton {
             const targetWs = win.originWorkspaceName.startsWith("special:")
                 ? win.originWorkspaceName
                 : win.originWorkspace;
-            batchCmds.push(`dispatch movetoworkspacesilent ${targetWs},address:${win.address}`);
+            batchCmds.push(`dispatch ${HyprlandDispatch.moveToWorkspace(win.address, targetWs, true)}`);
         }
 
         // Clear the tray
