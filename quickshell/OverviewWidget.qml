@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Wayland
 import Quickshell.Hyprland
 import "." as Local
 
@@ -66,6 +65,9 @@ Item {
     property int draggingTargetWorkspace: -1
     property string draggingWindowAddress: ""
     property string draggingTargetWindowAddress: ""
+    // Stable per-window identity (Hyprland >= 0.54) captured at drag start, so the
+    // dragged window can be re-resolved even if the polled client maps lag behind.
+    property var draggingWindowStableId: null
 
     // Size
     implicitWidth: overviewBackground.implicitWidth
@@ -155,7 +157,7 @@ Item {
         if (targetWs !== -1 && targetWs !== sourceWs) {
             // Cross-workspace move
             console.log(`[hypr-overview] FLOAT MOVE: ws ${sourceWs} -> ${targetWs}`);
-            Hyprland.dispatch(`movetoworkspacesilent ${targetWs}, address:${windowDelegate.winData?.address}`);
+            Hyprland.dispatch(`movetoworkspacesilent ${targetWs}, address:${windowDelegate.address}`);
         } else {
             // Same-ws reposition - use absolute pixel coordinates
             const posInWorkspaceX = windowDelegate.x - windowDelegate.xOffset;
@@ -167,7 +169,7 @@ Item {
             const absoluteX = Math.round(monitorX + posOnMonitorX);
             const absoluteY = Math.round(monitorY + posOnMonitorY);
             console.log(`[hypr-overview] FLOAT REPOSITION: ${absoluteX}, ${absoluteY}`);
-            Hyprland.dispatch(`movewindowpixel exact ${absoluteX} ${absoluteY}, address:${windowDelegate.winData?.address}`);
+            Hyprland.dispatch(`movewindowpixel exact ${absoluteX} ${absoluteY}, address:${windowDelegate.address}`);
         }
         return true;
     }
@@ -180,7 +182,7 @@ Item {
         if (targetWs === -1 || targetWs === currentWs) return false;
 
         console.log(`[hypr-overview] MOVE: ws ${currentWs} -> ${targetWs}`);
-        Hyprland.dispatch(`movetoworkspacesilent ${targetWs}, address:${windowDelegate.winData?.address}`);
+        Hyprland.dispatch(`movetoworkspacesilent ${targetWs}, address:${windowDelegate.address}`);
 
         // Wait for HyprlandData to refresh, then snap to correct position
         function onMoveDataUpdated() {
@@ -317,13 +319,11 @@ Item {
                 id: windowRepeater
                 model: ScriptModel {
                     values: {
-                        const toplevels = ToplevelManager.toplevels.values;
+                        const toplevels = Hyprland.toplevels.values;
 
                         // Filter toplevels to only show windows in current workspace group
                         return toplevels.filter((toplevel) => {
-                            const rawAddress = toplevel.HyprlandToplevel?.address;
-                            // HyprlandToplevel.address does NOT include 0x prefix, but hyprctl does
-                            const address = `0x${rawAddress}`;
+                            const address = HyprlandData.normalizeAddr(toplevel.address);
                             var win = root.windowByAddress[address];
 
                             if (!win?.workspace?.id) return false;
@@ -339,8 +339,9 @@ Item {
                     id: windowDelegate
                     required property var modelData
 
-                    property var address: `0x${modelData.HyprlandToplevel?.address}`
+                    property var address: HyprlandData.normalizeAddr(modelData.address)
                     property var winData: root.windowByAddress[address]
+                    property var stableId: winData?.stableId
                     property int winMonitorId: winData?.monitor ?? -1
                     property var winMonitorData: HyprlandData.monitors.find(m => m.id === winMonitorId)
 
@@ -394,8 +395,12 @@ Item {
                         onExited: windowDelegate.hovered = false
 
                         onPressed: (mouse) => {
-                            root.draggingFromWorkspace = windowDelegate.winData?.workspace?.id ?? -1;
+                            // Prefer the live HyprlandToplevel workspace (always current) over the
+                            // polled client object, which can lag a frame behind moves.
+                            root.draggingFromWorkspace = windowDelegate.modelData?.workspace?.id
+                                ?? windowDelegate.winData?.workspace?.id ?? -1;
                             root.draggingWindowAddress = windowDelegate.address;
+                            root.draggingWindowStableId = windowDelegate.stableId ?? null;
                             windowDelegate.pressed = true;
                             windowDelegate.Drag.active = true;
                             windowDelegate.Drag.source = windowDelegate;
@@ -421,6 +426,7 @@ Item {
                                 windowDelegate.Drag.active = false;
                                 root.draggingFromWorkspace = -1;
                                 root.draggingWindowAddress = "";
+                                root.draggingWindowStableId = null;
                                 root.draggingTargetWindowAddress = "";
                                 return;
                             }
@@ -429,9 +435,13 @@ Item {
                             const targetWs = root.draggingTargetWorkspace;
                             const targetWindow = root.draggingTargetWindowAddress;
                             const sourceWs = root.draggingFromWorkspace;
+                            // The live HyprlandToplevel workspace is authoritative; fall back to the
+                            // grid position and then the (possibly stale) polled client only if absent.
+                            const liveWs = windowDelegate.modelData?.workspace?.id ?? -1;
                             const currentWsFromData = windowDelegate.winData?.workspace?.id ?? -1;
                             const currentWsFromPosition = root.getWorkspaceAtPosition(windowDelegate.initX, windowDelegate.initY);
-                            const currentWs = currentWsFromPosition !== -1 ? currentWsFromPosition : currentWsFromData;
+                            const currentWs = liveWs !== -1 ? liveWs
+                                : (currentWsFromPosition !== -1 ? currentWsFromPosition : currentWsFromData);
                             const isFloating = windowDelegate.winData?.floating ?? false;
 
                             // Reset drag state
@@ -439,6 +449,7 @@ Item {
                             windowDelegate.Drag.active = false;
                             root.draggingFromWorkspace = -1;
                             root.draggingWindowAddress = "";
+                            root.draggingWindowStableId = null;
                             root.draggingTargetWindowAddress = "";
 
                             // PRIORITY 1: Tiled window swap (same workspace, over another window)

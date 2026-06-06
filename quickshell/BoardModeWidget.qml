@@ -12,11 +12,13 @@ Item {
     readonly property var focusedMonitor: Hyprland.focusedMonitor
     readonly property var monitorData: HyprlandData.monitors.find(m => m.id === focusedMonitor?.id)
 
-    // ========== DRAG STATE (mirrors Grid Mode OverviewWidget.qml:64-68) ==========
+    // ========== DRAG STATE (mirrors Grid Mode OverviewWidget.qml:64-69) ==========
     property int draggingFromWorkspace: -1
     property int draggingTargetWorkspace: -1
     property string draggingWindowAddress: ""
     property string draggingTargetWindowAddress: ""
+    // Stable per-window identity (Hyprland >= 0.54) captured at drag start.
+    property var draggingWindowStableId: null
 
     // ========== WINDOW DETECTION HELPERS ==========
     // Find window at global point across all clusters (for swap detection)

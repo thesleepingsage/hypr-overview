@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Shapes
-import Quickshell.Wayland
 import Quickshell.Hyprland
 
 Item {
@@ -277,12 +276,13 @@ Item {
                     // Window data
                     toplevel: modelData
                     windowData: {
-                        const address = `0x${modelData.HyprlandToplevel?.address ?? ""}`
+                        const address = HyprlandData.normalizeAddr(modelData.address)
                         return HyprlandData.windowByAddress[address] ?? {}
                     }
 
                     // Direct address property (mirrors Grid Mode OverviewWidget.qml:342)
-                    property string address: "0x" + (modelData.HyprlandToplevel?.address ?? "")
+                    property string address: HyprlandData.normalizeAddr(modelData.address)
+                    property var stableId: windowData?.stableId
 
                     // === MIRROR GRID MODE POSITIONING ===
                     // NO cascadeMode - use OverviewWindow's built-in initX/initY calculations
@@ -361,7 +361,8 @@ Item {
                             if (!canvas) return
 
                             canvas.draggingFromWorkspace = cluster.workspaceId
-                            canvas.draggingWindowAddress = windowDelegate.windowData?.address ?? ""
+                            canvas.draggingWindowAddress = windowDelegate.address
+                            canvas.draggingWindowStableId = windowDelegate.stableId ?? null
                             windowDelegate.pressed = true
                             windowDelegate.Drag.active = true
                             windowDelegate.Drag.source = windowDelegate
@@ -400,6 +401,7 @@ Item {
                                 if (canvas) {
                                     canvas.draggingFromWorkspace = -1;
                                     canvas.draggingWindowAddress = "";
+                                    canvas.draggingWindowStableId = null;
                                     canvas.draggingTargetWindowAddress = "";
                                 }
                                 return;
@@ -430,6 +432,7 @@ Item {
                             windowDelegate.Drag.active = false
                             canvas.draggingFromWorkspace = -1
                             canvas.draggingWindowAddress = ""
+                            canvas.draggingWindowStableId = null
                             canvas.draggingTargetWindowAddress = ""
                             cluster.isDropTarget = false
                             cluster.hasWindowDragging = false  // Clear z-boost
@@ -483,7 +486,7 @@ Item {
 
                             if (event.button === Qt.MiddleButton) {
                                 // Middle click: close window
-                                Hyprland.dispatch(`closewindow address:${windowDelegate.windowData.address}`);
+                                Hyprland.dispatch(`closewindow address:${windowDelegate.address}`);
                                 event.accepted = true;
                             } else if (event.button === Qt.LeftButton) {
                                 // Check modifiers for stash operations (mirrors Grid Mode)
@@ -503,7 +506,7 @@ Item {
                                 } else {
                                     // Regular left click: focus window and close overview
                                     OverviewState.close();
-                                    Hyprland.dispatch(`focuswindow address:${windowDelegate.windowData.address}`);
+                                    Hyprland.dispatch(`focuswindow address:${windowDelegate.address}`);
                                     event.accepted = true;
                                 }
                             }
